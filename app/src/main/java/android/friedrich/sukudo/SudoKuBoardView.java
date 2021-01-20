@@ -5,6 +5,7 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -24,11 +25,15 @@ public class SudoKuBoardView extends View {
     private Paint thinLinePaint;
     private Paint selectedCellPaint;
     private Paint relativeCellPaint;
+    private Paint selectedCellTextPaint;
+    private Paint commonCellTextPaint;
     private onTouchListener mListener;
+
+    private Cell[] mCells;
 
     public SudoKuBoardView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        Resources resources = context.getResources();
+        int color;
         thickLinePaint = new Paint();
         thickLinePaint.setStyle(Paint.Style.STROKE);
         thickLinePaint.setColor(Color.BLACK);
@@ -41,13 +46,23 @@ public class SudoKuBoardView extends View {
 
         selectedCellPaint = new Paint();
         selectedCellPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        int color = ContextCompat.getColor(context, R.color.light_yellow);
+        color = ContextCompat.getColor(context, R.color.light_yellow);
         selectedCellPaint.setColor(color);
 
         relativeCellPaint = new Paint();
         relativeCellPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         color = ContextCompat.getColor(context, R.color.light_white);
         relativeCellPaint.setColor(color);
+
+        selectedCellTextPaint = new Paint();
+        selectedCellTextPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        color = ContextCompat.getColor(context, R.color.red);
+        selectedCellTextPaint.setColor(color);
+
+        commonCellTextPaint = new Paint();
+        commonCellTextPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        color = ContextCompat.getColor(context, R.color.black);
+        commonCellTextPaint.setColor(color);
 
     }
 
@@ -56,6 +71,7 @@ public class SudoKuBoardView extends View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int sizePixels = Math.min(widthMeasureSpec, heightMeasureSpec);
         setMeasuredDimension(sizePixels, sizePixels);
+
     }
 
 
@@ -65,10 +81,13 @@ public class SudoKuBoardView extends View {
         updateMeasurements(getMeasuredWidth());
         fillCells(canvas);
         drawLines(canvas);
+        drawCellsText(canvas);
     }
 
     public void updateMeasurements(int width) {
         cellSizePixel = ((float) width) / SIZE;
+        selectedCellTextPaint.setTextSize(cellSizePixel/1.5F);
+        commonCellTextPaint.setTextSize(cellSizePixel/1.5F);
 
     }
 
@@ -101,6 +120,35 @@ public class SudoKuBoardView extends View {
         canvas.drawRect(cellSizePixel * col, cellSizePixel * row, cellSizePixel * (col + 1), cellSizePixel * (row + 1), paint);
     }
 
+    private void drawCellsText(Canvas canvas) {
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (r == rowSelected && c == colSelected) {
+                    drawCellText(canvas, r, c, selectedCellTextPaint);
+                } else {
+                    drawCellText(canvas, r, c, commonCellTextPaint);
+                }
+            }
+        }
+    }
+
+    private void drawCellText(Canvas canvas, int row, int col, Paint paint) {
+        int index = Cell.getIndex(row, col);
+        if (mCells == null || index >= mCells.length || mCells[index] == null) {
+            return;
+        }
+        String text = mCells[index].getPossibleValue();
+        if (!text.equals(Cell.UNFILLED_VALUE)) {
+            Rect rect = new Rect();
+            paint.getTextBounds(text,0,text.length(),rect);
+            float width = paint.measureText(text);
+            float height = rect.height();
+            float x = (float) (col + 0.5) * cellSizePixel;
+            float y = (float) (row + 0.5) * cellSizePixel;
+            canvas.drawText(text, x-width/2, y+height/2, paint);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
@@ -116,12 +164,16 @@ public class SudoKuBoardView extends View {
         Log.i(TAG, "handleActionDown: (" + row + ", " + col + ")");
         rowSelected = row;
         colSelected = col;
-        mListener.handle(row,col);
+        mListener.handle(row, col);
         invalidate();
     }
 
+    public void bindCells(Cell[] cells) {
+        mCells = cells;
+    }
+
     public interface onTouchListener {
-        void handle(int row,int col);
+        void handle(int row, int col);
     }
 
     public void setListener(onTouchListener listener) {

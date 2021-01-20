@@ -7,7 +7,7 @@ public class Grid {
     private static final String ROWS = "ABCDEFGHI";
     private static final String COLS = "123456789";
     private static final String EMPTY_NUMBER = "0";
-    private static final char dot = '.';
+    public static final char dot = '.';
     public static final int SIZE = 81;
     private static final int PEER_SIZE = 20;
     private static final int UNIT_SIZE = 9;

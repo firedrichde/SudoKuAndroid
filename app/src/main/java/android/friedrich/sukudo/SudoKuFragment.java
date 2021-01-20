@@ -1,7 +1,9 @@
 package android.friedrich.sukudo;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -20,6 +22,7 @@ import java.util.List;
  */
 public class SudoKuFragment extends Fragment {
     private static final String TAG = "SudoKuFragment";
+    private static final String KEY_GRID_STRING = "gridString";
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -39,6 +42,8 @@ public class SudoKuFragment extends Fragment {
     private List<Button> mButtonNumberList;
     private String mActiveNumber;
     private Cell[] mCells;
+    private SudoKuGenerateTask mSudoKuGenerateTask;
+    private String mGridString;
 
     public SudoKuFragment() {
         // Required empty public constructor
@@ -61,10 +66,19 @@ public class SudoKuFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            mGridString = savedInstanceState.getString(KEY_GRID_STRING, "");
+        }
         mButtonNumberList = new ArrayList<>();
         mCells = new Cell[Grid.SIZE];
         for (int i = 0; i < mCells.length; i++) {
             mCells[i] = new Cell(i);
+        }
+        if (mGridString == null || mGridString.equals("")) {
+            mSudoKuGenerateTask = new SudoKuGenerateTask();
+            mSudoKuGenerateTask.execute();
+        }else{
+            bindCells(mGridString);
         }
 //        if (getArguments() != null) {
 //        }
@@ -80,12 +94,13 @@ public class SudoKuFragment extends Fragment {
             @Override
             public void handle(int row, int col) {
                 int index = Cell.getIndex(row, col);
-                if (mActiveNumber != null && !mActiveNumber.equals("") && Grid.DIGITS.indexOf(mActiveNumber) != -1) {
+                if (mActiveNumber != null && !mActiveNumber.equals("") && !mCells[index].isServerMode()) {
                     mCells[index].setPossibleValue(mActiveNumber);
                     Log.i(TAG, "handle: index=" + index + ", number=" + mActiveNumber);
                 }
             }
         });
+        mBoardView.bindCells(mCells);
         mButton1 = view.findViewById(R.id.button_number_1);
         mButton2 = view.findViewById(R.id.button_number_2);
         mButton3 = view.findViewById(R.id.button_number_3);
@@ -115,6 +130,51 @@ public class SudoKuFragment extends Fragment {
                 }
             });
         }
+        mButtonDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActiveNumber = Cell.UNFILLED_VALUE;
+                Log.i(TAG, "onClick: reset active number");
+            }
+        });
         return view;
+    }
+
+    private class SudoKuGenerateTask extends AsyncTask<Void, Void, String> {
+        @Override
+        protected String doInBackground(Void... voids) {
+            String gridString = "";
+            try {
+                gridString = Grid.Generate();
+
+            } catch (Exception e) {
+                Log.e(TAG, "doInBackground: sudoKu generate failed", e);
+            }
+            return gridString;
+
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            bindCells(s);
+        }
+    }
+
+    private void bindCells(String gridString) {
+        mGridString = gridString;
+        for (int i = 0; i < gridString.length(); i++) {
+            char value = gridString.charAt(i);
+            if (value != Grid.dot) {
+                mCells[i].setPossibleValue(String.valueOf(value));
+                mCells[i].setServerMode(true);
+            }
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(KEY_GRID_STRING, mGridString);
     }
 }
