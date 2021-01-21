@@ -1,4 +1,4 @@
-package android.friedrich.sukudo;
+package android.friedrich.sudoKu;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -24,10 +24,6 @@ public class SudoKuFragment extends Fragment {
     private static final String TAG = "SudoKuFragment";
     private static final String KEY_GRID_STRING = "gridString";
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-
-    // TODO: Rename and change types of parameters
     private SudoKuBoardView mBoardView;
     private Button mButton1;
     private Button mButton2;
@@ -58,8 +54,6 @@ public class SudoKuFragment extends Fragment {
     // TODO: Rename and change types and number of parameters
     public static SudoKuFragment newInstance() {
         SudoKuFragment fragment = new SudoKuFragment();
-//        Bundle args = new Bundle();
-//        fragment.setArguments(args);
         return fragment;
     }
 
@@ -70,7 +64,7 @@ public class SudoKuFragment extends Fragment {
             mGridString = savedInstanceState.getString(KEY_GRID_STRING, "");
         }
         mButtonNumberList = new ArrayList<>();
-        mCells = new Cell[Grid.SIZE];
+        mCells = new Cell[SudoKuBoard.CELL_SIZE];
         for (int i = 0; i < mCells.length; i++) {
             mCells[i] = new Cell(i);
         }
@@ -80,8 +74,6 @@ public class SudoKuFragment extends Fragment {
         }else{
             bindCells(mGridString);
         }
-//        if (getArguments() != null) {
-//        }
     }
 
     @Override
@@ -94,7 +86,8 @@ public class SudoKuFragment extends Fragment {
             @Override
             public void handle(int row, int col) {
                 int index = Cell.getIndex(row, col);
-                if (mActiveNumber != null && !mActiveNumber.equals("") && !mCells[index].isServerMode()) {
+                // modify cell value if the value is assigned by user
+                if (mActiveNumber != null && !mActiveNumber.equals("") && !mCells[index].isGenerateByProgram()) {
                     mCells[index].setPossibleValue(mActiveNumber);
                     Log.i(TAG, "handle: index=" + index + ", number=" + mActiveNumber);
                 }
@@ -125,6 +118,7 @@ public class SudoKuFragment extends Fragment {
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    // set the value for assignment
                     mActiveNumber = button.getText().toString();
                     Log.i(TAG, "onClick: active number " + mActiveNumber);
                 }
@@ -133,6 +127,7 @@ public class SudoKuFragment extends Fragment {
         mButtonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // set the value to Cell.UNFILLED_VALUE in order to remove previous assignment
                 mActiveNumber = Cell.UNFILLED_VALUE;
                 Log.i(TAG, "onClick: reset active number");
             }
@@ -145,7 +140,7 @@ public class SudoKuFragment extends Fragment {
         protected String doInBackground(Void... voids) {
             String gridString = "";
             try {
-                gridString = Grid.Generate();
+                gridString = SudoKuBoard.Generate();
 
             } catch (Exception e) {
                 Log.e(TAG, "doInBackground: sudoKu generate failed", e);
@@ -157,6 +152,7 @@ public class SudoKuFragment extends Fragment {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
+            // bind the grid initial values to cells
             bindCells(s);
         }
     }
@@ -165,9 +161,9 @@ public class SudoKuFragment extends Fragment {
         mGridString = gridString;
         for (int i = 0; i < gridString.length(); i++) {
             char value = gridString.charAt(i);
-            if (value != Grid.dot) {
+            if (value != SudoKuBoard.dot) {
                 mCells[i].setPossibleValue(String.valueOf(value));
-                mCells[i].setServerMode(true);
+                mCells[i].setGenerateByProgram(true);
             }
         }
     }
@@ -175,6 +171,7 @@ public class SudoKuFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        //save the grid initial values when fragment is paused
         outState.putSerializable(KEY_GRID_STRING, mGridString);
     }
 }

@@ -1,4 +1,4 @@
-package android.friedrich.sukudo;
+package android.friedrich.sudoKu;
 
 import androidx.fragment.app.Fragment;
 

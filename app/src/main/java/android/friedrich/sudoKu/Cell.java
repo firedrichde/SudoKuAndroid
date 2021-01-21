@@ -1,4 +1,4 @@
-package android.friedrich.sukudo;
+package android.friedrich.sudoKu;
 
 public class Cell {
     public static String UNFILLED_VALUE = "0";
@@ -7,8 +7,9 @@ public class Cell {
     private int col;
     private int index;
     private String possibleValue;
+
     // if cell possible value is assigned by program,serverMode is true
-    private boolean serverMode;
+    private boolean generateByProgram;
 
     public Cell(int row, int col) {
         this.row = row;
@@ -48,11 +49,11 @@ public class Cell {
         return index;
     }
 
-    public boolean isServerMode() {
-        return serverMode;
+    public boolean isGenerateByProgram() {
+        return generateByProgram;
     }
 
-    public void setServerMode(boolean serverMode) {
-        this.serverMode = serverMode;
+    public void setGenerateByProgram(boolean generateByProgram) {
+        this.generateByProgram = generateByProgram;
     }
 }

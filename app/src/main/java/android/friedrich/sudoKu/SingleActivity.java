@@ -1,4 +1,4 @@
-package android.friedrich.sukudo;
+package android.friedrich.sudoKu;
 
 import android.os.Bundle;
 
