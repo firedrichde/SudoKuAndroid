@@ -22,9 +22,13 @@ import java.util.List;
  */
 public class SudoKuFragment extends Fragment {
     private static final String TAG = "SudoKuFragment";
-    private static final String KEY_GRID_STRING = "gridString";
+    private static final String KEY_BOARD_STRING = "boardString";
 
     private SudoKuBoardView mBoardView;
+
+    /**
+     * fields from mButton1 to mButton9 is button with number 1 to 9
+     */
     private Button mButton1;
     private Button mButton2;
     private Button mButton3;
@@ -36,10 +40,18 @@ public class SudoKuFragment extends Fragment {
     private Button mButton9;
     private Button mButtonDelete;
     private List<Button> mButtonNumberList;
+    /**
+     * current number for assignment
+     */
     private String mActiveNumber;
     private Cell[] mCells;
+
+    private CellsManager mCellsManager;
+    /**
+     * asyncTask for sudoKu generate
+     */
     private SudoKuGenerateTask mSudoKuGenerateTask;
-    private String mGridString;
+    private String mBoardString;
 
     public SudoKuFragment() {
         // Required empty public constructor
@@ -61,18 +73,22 @@ public class SudoKuFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
-            mGridString = savedInstanceState.getString(KEY_GRID_STRING, "");
+            /*
+            load the previous SudoKu if the activity is still in progress
+             */
+            mBoardString = savedInstanceState.getString(KEY_BOARD_STRING, "");
         }
         mButtonNumberList = new ArrayList<>();
         mCells = new Cell[SudoKuBoard.CELL_SIZE];
+        mCellsManager = new CellsManager(mCells);
         for (int i = 0; i < mCells.length; i++) {
             mCells[i] = new Cell(i);
         }
-        if (mGridString == null || mGridString.equals("")) {
+        if (mBoardString == null || mBoardString.equals("")) {
             mSudoKuGenerateTask = new SudoKuGenerateTask();
             mSudoKuGenerateTask.execute();
         }else{
-            bindCells(mGridString);
+            bindCells(mBoardString);
         }
     }
 
@@ -88,6 +104,7 @@ public class SudoKuFragment extends Fragment {
                 int index = Cell.getIndex(row, col);
                 // modify cell value if the value is assigned by user
                 if (mActiveNumber != null && !mActiveNumber.equals("") && !mCells[index].isGenerateByProgram()) {
+
                     mCells[index].setPossibleValue(mActiveNumber);
                     Log.i(TAG, "handle: index=" + index + ", number=" + mActiveNumber);
                 }
@@ -127,7 +144,9 @@ public class SudoKuFragment extends Fragment {
         mButtonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // set the value to Cell.UNFILLED_VALUE in order to remove previous assignment
+                /*
+                 set the value to Cell.UNFILLED_VALUE in order to remove previous assignment
+                 */
                 mActiveNumber = Cell.UNFILLED_VALUE;
                 Log.i(TAG, "onClick: reset active number");
             }
@@ -138,27 +157,27 @@ public class SudoKuFragment extends Fragment {
     private class SudoKuGenerateTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... voids) {
-            String gridString = "";
+            String boardString = "";
             try {
-                gridString = SudoKuBoard.Generate();
-
+                boardString = SudoKuBoard.Generate();
             } catch (Exception e) {
                 Log.e(TAG, "doInBackground: sudoKu generate failed", e);
             }
-            return gridString;
-
+            return boardString;
         }
 
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            // bind the grid initial values to cells
+            /*
+             bind the grid initial values to cells
+             */
             bindCells(s);
         }
     }
 
     private void bindCells(String gridString) {
-        mGridString = gridString;
+        mBoardString = gridString;
         for (int i = 0; i < gridString.length(); i++) {
             char value = gridString.charAt(i);
             if (value != SudoKuBoard.dot) {
@@ -172,6 +191,6 @@ public class SudoKuFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         //save the grid initial values when fragment is paused
-        outState.putSerializable(KEY_GRID_STRING, mGridString);
+        outState.putSerializable(KEY_BOARD_STRING, mBoardString);
     }
 }

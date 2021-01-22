@@ -8,7 +8,9 @@ public class Cell {
     private int index;
     private String possibleValue;
 
-    // if cell possible value is assigned by program,serverMode is true
+    /**
+     * if cell possible value is assigned by program,serverMode is true, else false
+     */
     private boolean generateByProgram;
 
     public Cell(int row, int col) {

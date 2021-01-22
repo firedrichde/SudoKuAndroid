@@ -1,52 +1,97 @@
 package android.friedrich.sudoKu;
 
+import android.util.Log;
+
 import java.util.*;
 
 public class SudoKuBoard {
+    private static String TAG = "SudoKuBoard";
+
     /**
      * the collection of numbers used in SudoKu
      */
     public static final String DIGITS = "123456789";
+
     /**
      * represent board row from A to I
      */
     private static final String ROWS = "ABCDEFGHI";
+
     /**
      * represent board col from 1 to 9
      */
     private static final String COLS = "123456789";
+
     /**
      * represent the cell should be assigned by user
      */
     public static final char dot = '.';
+
     /**
-     * the number of cells in board
+     * the number of cells in the board
      */
     public static final int CELL_SIZE = 81;
+
+    /**
+     * the number of cells related with a specified cell
+     */
     private static final int PEER_SIZE = 20;
+
+    /**
+     * the number of cells that one row,col,or subBoard contains
+     */
     private static final int UNIT_SIZE = 9;
+
+    /**
+     * the number of rows,cols and subBoard. Nine rows,nine cols and nine subBoard
+     */
     private static final int UNIT_NUMBER = 27;
+
+    /**
+     * numbers used at least at the initial status of the board
+     */
     private static final int INIT_DIFFERENT_NUMBERS = 8;
+
+    /**
+     * the number of unit related with a special cell
+     */
     private static final int RELATED_UNITS_SIZE = 3;
 
+    /**
+     * the generator for creating a random board
+     */
     private static SudoKuBoard generator;
 
-    public static String[] sSquareNames;
+    /**
+     * name of the cells in SudoKu board
+     */
+    public static String[] sCellNameArray;
+
+    /**
+     * divide the board in 3*9 units
+     */
     public static int[][] sUnits;
+
+    /**
+     * peers for each cell
+     */
     public static Set<Integer>[] sPeers;
 
+    /**
+     * possible numbers(1-9) could be assigned for every cell
+     */
     private String[] mPossibleValues;
-    private String[] mPossibleValuesBackup;
+
     private Set<Integer>[] mPeers;
     private int[][] mUnits;
 
     static {
-        sSquareNames = new String[CELL_SIZE];
+        sCellNameArray = new String[CELL_SIZE];
         int count = 0;
         for (int i = 0; i < ROWS.length(); i++) {
             for (int j = 0; j < COLS.length(); j++) {
                 String name = ROWS.charAt(i) + "" + COLS.charAt(j);
-                sSquareNames[count] = name;
+                sCellNameArray[count] = name;
                 count++;
             }
         }
@@ -69,41 +114,49 @@ public class SudoKuBoard {
     }
 
     public static void main(String[] args) throws Exception {
-//        String values = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......";
         String values = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......";
-        SudoKuBoard sudoKuBoardGenerator = new SudoKuBoard();
         SudoKuBoard sudoKuBoardSolver = new SudoKuBoard();
-//        boolean solved = grid.solve(values);
-////        grid.generateForAllCell();
-//        if (solved) {
-//        System.out.println(grid);
-//        }else {
-//            System.out.println("not solved");
-//            System.out.println(grid);
-//        }
         String gridString = Generate();
         System.out.println(gridString);
         sudoKuBoardSolver.solve(gridString);
         System.out.println(sudoKuBoardSolver);
     }
 
+    /**
+     * choose a random char in the string
+     *
+     * @param values the specified String
+     * @return the random char in the specified String
+     */
     public static char getRandomChar(String values) {
         Random random = new Random(System.currentTimeMillis());
         int index = random.nextInt(values.length());
         return values.charAt(index);
     }
 
-    public static boolean check(SudoKuBoard sudukuBoard) {
-        for (int i = 0; i < CELL_SIZE; i++) {
-            if (sudukuBoard.mPossibleValues[i].length() > 1) {
+    /**
+     * judge whether the specified sudoKu is solved
+     *
+     * @param sudoKuBoard the specified sudoKu board
+     * @return true if the sudoKu is solved, else return false
+     */
+    public static boolean check(SudoKuBoard sudoKuBoard) {
+        for (int cellIndex = 0; cellIndex < CELL_SIZE; cellIndex++) {
+            /*
+              every cell is assigned with a number
+             */
+            if (sudoKuBoard.mPossibleValues[cellIndex].length() > 1) {
                 return false;
             }
         }
-        for (int i = 0; i < CELL_SIZE; i++) {
-            Set<Integer> peers = sudukuBoard.getPeers(i);
+        for (int cellIndex = 0; cellIndex < CELL_SIZE; cellIndex++) {
+            Set<Integer> peers = getGridPeers(cellIndex);
             for (Integer x :
                     peers) {
-                if (x == i) {
+                /*
+                  the specified cell is conflict with it's peers
+                 */
+                if (sudoKuBoard.mPossibleValues[x].equals(sudoKuBoard.mPossibleValues[cellIndex])) {
                     return false;
                 }
             }
@@ -116,126 +169,166 @@ public class SudoKuBoard {
             generator = new SudoKuBoard();
         }
         String gridString = "";
+        // TODO: 1/21/21 constant 10 should be assigned by a constant variable
         int limit = 18;
-        gridString = generator.random_puzzle(limit, limit + 10);
+        /*
+            number of cells which generated by program is in range(limit,limit+10)
+         */
+        gridString = generator.randomSudoKuPuzzle(limit, limit + 10);
         SudoKuBoard sudukuBoard = new SudoKuBoard();
         while (!sudukuBoard.solve(gridString)) {
-            gridString = generator.random_puzzle(limit, limit + 10);
+            gridString = generator.randomSudoKuPuzzle(limit, limit + 10);
             sudukuBoard = new SudoKuBoard();
         }
         return gridString;
     }
 
-    public boolean solve(String values) {
-        boolean hasParsed = parseGrid(values);
+    /**
+     * solve the sudoKu from the given string
+     *
+     * @param boardString initial status of the sudoKu is represented by a string
+     * @return true if program can solve the sudoKu,else return false
+     */
+    public boolean solve(String boardString) {
+        boolean hasParsed = parseGrid(boardString);
         if (!hasParsed) {
-            System.err.println("grid is illegal");
+            Log.e(TAG, "solve: the board string is illegal " + boardString);
             return false;
         } else {
             String[] possibleValues = copy(mPossibleValues);
-            String[] ret = search(possibleValues);
-            mPossibleValues = ret;
+            String[] resultArray = search(possibleValues);
+            if (resultArray == null) {
+                return false;
+            }
+            mPossibleValues = resultArray;
             return check(this);
         }
     }
 
-    public void generateForAllCell() {
-//        Candidate candidate = new Candidate();
-//        for (int i = 0; i < ROWS.length(); i++) {
-//            for (int j = 0; j < COLS.length(); j++) {
-//                String name = ROWS.charAt(i)+""+COLS.charAt(j);
-//                mSquares.put(name,candidate.toString());
-//                mSquareNames.add(name);
-//            }
-//        }
-//        System.out.println(candidate);
-    }
-
-    public boolean parseGrid(String grid) {
-        assert grid.length() == 81;
-        String[] possible = copy(mPossibleValues);
-        for (int i = 0; i < grid.length(); i++) {
-            char ch = grid.charAt(i);
-//            if (ch==dot){
-//                continue;
-//            }
-            if (validValue(ch, DIGITS) && !assignValue(possible, i, ch)) {
+    /**
+     * parse the specified string to assign number for every cell.
+     *
+     * @param boardString initial status of the sudoKu is represented by a string
+     * @return true if the numbers can be filled on the board without logical conflict, else false
+     */
+    public boolean parseGrid(String boardString) {
+        assert boardString.length() == 81;
+        for (int cellIndex = 0; cellIndex < boardString.length(); cellIndex++) {
+            char ch = boardString.charAt(cellIndex);
+            /*
+            if the char is not digits(for example '.'(dot)), means the cell number is implicit now.
+            if one cell assigned with the specified number conflict with another cell, then break
+            the parse loop.
+             */
+            if (validateNumber(ch) && !assignValue(mPossibleValues, cellIndex, ch)) {
                 return false;
             }
         }
-        mPossibleValues = possible;
         return true;
     }
 
-    private boolean validValue(char ch, String s) {
-        return s.indexOf(ch) != -1;
+    private boolean validateNumber(char number) {
+        return DIGITS.indexOf(number) != -1;
     }
 
-    private boolean assignValue(String[] possibleValues, int index, char ch) {
-//        System.out.println("assign "+index+" num="+ch);
-        String otherValues = possibleValues[index].replace(String.valueOf(ch), "");
-//        mPossibleValues[index] = String.valueOf(ch);
+    /**
+     * assign certain number to the specified cell.
+     * assign the given number means eliminate other numbers in the possible values of the
+     * specified cell. for example: the cell's possible values is "3456",if is to be assigned with
+     * number '4', eliminate other numbers "356" in the loop.
+     *
+     * @param possibleValues possible numbers of all cells
+     * @param cellIndex      the position of the specified cell
+     * @param number         the given number for assignment
+     * @return true if the specified cell can be assigned with the given number, else false
+     */
+    private boolean assignValue(String[] possibleValues, int cellIndex, char number) {
+        String otherValues = possibleValues[cellIndex].replace(String.valueOf(number), "");
         for (int i = 0; i < otherValues.length(); i++) {
-            if (!eliminate(possibleValues, index, otherValues.charAt(i))) {
+            if (!eliminate(possibleValues, cellIndex, /* number need to remove*/otherValues.charAt(i))) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean eliminate(String[] possibleValues, int index, char ch) {
-        if (possibleValues[index].indexOf(ch) == -1) {
-            return true;
-        } else {
-            String values = possibleValues[index].replace(String.valueOf(ch), "");
-            possibleValues[index] = values;
+    /**
+     * eliminate the given number for the specified cell
+     *
+     * @param possibleValues possible numbers of all cells
+     * @param cellIndex      the position of the specified cell
+     * @param number         the specified number
+     * @return true if the specified cell can be eliminate with the given number, else false
+     */
+    private boolean eliminate(String[] possibleValues, int cellIndex, char number) {
+        /*
+        if number has been removed from the specified cell, no eliminate operation.
+        the conditions is false, means two peers from different units have been assigned with
+        the number, not assignment conflict
+         */
+        // TODO: 1/22/21 if the condition is false, means conflict assignment?
+        if (possibleValues[cellIndex].indexOf(number) != -1) {
+            String values = possibleValues[cellIndex].replace(String.valueOf(number), "");
+            /*
+            remove number from the specified cell
+             */
+            possibleValues[cellIndex] = values;
             if (values.length() == 0) {
-                // remove all possible value
+                /*
+                 remove all possible value
+                 */
                 return false;
             } else if (values.length() == 1) {
-                /*int[] peers = getPeers(index);
-                for (int i = 0; i < peers.length; i++) {
-                    if (!eliminate(peers[i], values.charAt(0))) {
-                        return false;
-                    }
-                }*/
-//                System.out.println(display(possibleValues));
-                Set<Integer> peers = getPeers(index);
+                Set<Integer> peers = getGridPeers(cellIndex);
                 for (Integer x :
                         peers) {
                     if (!eliminate(possibleValues, x, values.charAt(0))) {
+                        /*
+                        failed to eliminate number in the cell's peers
+                         */
                         return false;
                     }
                 }
             }
-            int[] unitsIndex = getUnitsIndex(index);
-            for (int i = 0; i < unitsIndex.length; i++) {
-                int[] unit = mUnits[unitsIndex[i]];
+            int[] relativeUnitsByIndex = getRelativeUnitsByIndex(cellIndex);
+            /*
+            scan relative units to see if some cells can be assigned explicit or conflict may
+            maybe occur.
+             */
+            for (int i = 0; i < relativeUnitsByIndex.length; i++) {
+                int[] unit = sUnits[relativeUnitsByIndex[i]];
                 int count = 0;
                 int numberEnsureIndex = 0;
                 for (int j = 0; j < unit.length; j++) {
-                    if (possibleValues[unit[j]].indexOf(ch) != -1) {
+                    if (possibleValues[unit[j]].indexOf(number) != -1) {
                         count++;
                         numberEnsureIndex = unit[j];
                     }
                 }
                 if (count == 0) {
-                    // no place for number ch in the unit
+                    /*
+                     no place for number in the unit
+                     */
                     return false;
                 } else if (count == 1) {
-                    if (!assignValue(possibleValues, numberEnsureIndex, ch)) {
+                    /*
+                     only one place for number in the unit
+                     */
+                    if (!assignValue(possibleValues, numberEnsureIndex, number)) {
                         return false;
                     }
                 }
             }
-            return true;
         }
+        return true;
     }
 
+    @Deprecated
     private Set<Integer> getPeers(int index) {
         return mPeers[index];
     }
 
+    @Deprecated
     private void setPeers() throws Exception {
         mPeers = (HashSet<Integer>[]) new HashSet[CELL_SIZE];
         for (int i = 0; i < CELL_SIZE; i++) {
@@ -254,30 +347,39 @@ public class SudoKuBoard {
             }
         }
     }
-//    public Set<Integer>
 
     /**
-     * set the peers for each square of the Gird
+     * set the peers for each cell of the Gird
      */
     public static void setGridPeers() {
         sPeers = (HashSet<Integer>[]) new HashSet[CELL_SIZE];
-        for (int squareIndex = 0; squareIndex < CELL_SIZE; squareIndex++) {
-            sPeers[squareIndex] = new HashSet<>();
-            int[] relativeUnitIndexArray = getRelativeUnitsByIndex(squareIndex);
+        for (int cellIndex = 0; cellIndex < CELL_SIZE; cellIndex++) {
+            sPeers[cellIndex] = new HashSet<>();
+            int[] relativeUnitIndexArray = getRelativeUnitsByIndex(cellIndex);
             for (int unitIndex = 0; unitIndex < relativeUnitIndexArray.length; unitIndex++) {
                 for (int k = 0; k < sUnits[relativeUnitIndexArray[unitIndex]].length; k++) {
-                    // void to make square self as its peer
-                    if (sUnits[relativeUnitIndexArray[unitIndex]][k] == squareIndex) {
+                    /*
+                     void to make square self as its peer
+                     */
+                    if (sUnits[relativeUnitIndexArray[unitIndex]][k] == cellIndex) {
                         continue;
                     }
-                    sPeers[squareIndex].add(sUnits[relativeUnitIndexArray[unitIndex]][k]);
+                    sPeers[cellIndex].add(sUnits[relativeUnitIndexArray[unitIndex]][k]);
                 }
             }
-            // ensure the size of peers is PEER_SIZE
-            assert (sPeers[squareIndex].size() == PEER_SIZE);
+            /*
+             ensure the size of peers is PEER_SIZE
+             */
+            assert (sPeers[cellIndex].size() == PEER_SIZE);
         }
     }
 
+    /**
+     * get the peers of the specified cell
+     *
+     * @param index the position of the specified cell
+     * @return peers of the specified cell
+     */
     public static Set<Integer> getGridPeers(int index) {
         if (index < 0 || index >= CELL_SIZE) {
             throw new IllegalArgumentException(String.format("index(%s) is not in range[0,%d)", index, CELL_SIZE));
@@ -286,82 +388,63 @@ public class SudoKuBoard {
         }
     }
 
-    private void backup() {
-        mPossibleValuesBackup = new String[CELL_SIZE];
-        for (int i = 0; i < CELL_SIZE; i++) {
-            mPossibleValuesBackup[i] = mPossibleValues[i];
+    /**
+     * copy the specified string array
+     *
+     * @param src the source string array
+     * @return string array that is copied from src
+     */
+    private String[] copy(String[] src) {
+        String[] dst = new String[src.length];
+        for (int i = 0; i < src.length; i++) {
+            dst[i] = src[i];
         }
+        return dst;
     }
 
-    private void recover() {
-        for (int i = 0; i < CELL_SIZE; i++) {
-            mPossibleValues[i] = mPossibleValuesBackup[i];
-        }
-    }
-
-    private String[] copy(String[] s) {
-        String[] ret = new String[s.length];
-        for (int i = 0; i < s.length; i++) {
-            ret[i] = s[i];
-        }
-        return ret;
-    }
-
+    /**
+     * use depth first search to fill the sudoKu.
+     *
+     * @param possibleValues possible numbers of all cells
+     * @return null if all assignments cause conflict,else return certain values of all cells.
+     */
     public String[] search(String[] possibleValues) {
-//        System.out.println(display(possibleValues));
-        int count = 0;
-        int minLength = DIGITS.length();
-        int minPossibleValueIndex = 0;
-        for (int i = 0; i < possibleValues.length; i++) {
-            int length = possibleValues[i].length();
+        int filledCellCount = 0;
+        int minLengthOfPossibleValue = DIGITS.length();
+        int indexOfFirstAssignCell = 0;
+        for (int cellIndex = 0; cellIndex < possibleValues.length; cellIndex++) {
+            int length = possibleValues[cellIndex].length();
             if (length == 1) {
-                count++;
+                filledCellCount++;
             } else {
-                if (length < minLength) {
-                    minLength = length;
-                    minPossibleValueIndex = i;
+                if (length < minLengthOfPossibleValue) {
+                    minLengthOfPossibleValue = length;
+                    indexOfFirstAssignCell = cellIndex;
                 }
             }
         }
-        if (count == CELL_SIZE) {
+        if (filledCellCount == CELL_SIZE) {
+            /*
+            all cells in the board are filled
+             */
             return possibleValues;
         } else {
-            for (int i = 0; i < possibleValues[minPossibleValueIndex].length(); i++) {
+            for (int i = 0; i < possibleValues[indexOfFirstAssignCell].length(); i++) {
                 String[] copy = copy(possibleValues);
-//                System.out.println("index="+minPossibleValueIndex+", num="+copy[minPossibleValueIndex].charAt(i));
-                if (assignValue(copy, minPossibleValueIndex, copy[minPossibleValueIndex].charAt(i))) {
+                if (assignValue(copy, indexOfFirstAssignCell, copy[indexOfFirstAssignCell].charAt(i))) {
                     String[] values = search(copy);
                     if (values != null) {
                         return values;
                     }
                 } else {
-                    System.out.println("assign failed");
+                    Log.i(TAG, String.format("search: assign %c to index %d failed",
+                            indexOfFirstAssignCell, copy[indexOfFirstAssignCell].charAt(i)));
                 }
             }
         }
         return null;
     }
 
-    /*@Override
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        int index = 1;
-        for (String s :
-                mSquares.keySet()) {
-            stringBuilder.append(s);
-            stringBuilder.append(" ");
-            if (index % 9 == 0) {
-                stringBuilder.append("\n");
-            }
-            index++;
-        }
-        return stringBuilder.toString();
-    }*/
-
-    @Deprecated
-    private int getSubGridIndex(int index) {
-        return getUnitsIndex(index)[2];
-    }
 
     /**
      * return the array of relative unit's index at the specified position of Gird squares.
@@ -397,6 +480,7 @@ public class SudoKuBoard {
         return unitsIndex;
     }
 
+    @Deprecated
     private void setUnits() {
         mUnits = new int[UNIT_NUMBER][UNIT_SIZE];
         // all row units
@@ -411,7 +495,7 @@ public class SudoKuBoard {
                 mUnits[i][j] = j * UNIT_SIZE + i - 9;
             }
         }
-        // all subgrid units
+        // all subBoard units
         for (int i = 18; i < UNIT_NUMBER; i++) {
             int count = 0;
             int j = (i - 18) / 3;
@@ -426,6 +510,10 @@ public class SudoKuBoard {
         }
     }
 
+    /**
+     * divide the SudoKu board into 27 units
+     * nine row units, nine col units, nine subBoard units
+     */
     public static void setGridUnits() {
         sUnits = new int[UNIT_NUMBER][UNIT_SIZE];
         // all row units
@@ -440,7 +528,7 @@ public class SudoKuBoard {
                 sUnits[i][j] = j * UNIT_SIZE + i - 9;
             }
         }
-        // all subgrid units
+        // all subBoard units
         for (int i = 18; i < UNIT_NUMBER; i++) {
             int count = 0;
             int j = (i - 18) / 3;
@@ -485,6 +573,7 @@ public class SudoKuBoard {
         return builder.toString();
     }
 
+    @Deprecated
     public String display(String[] possibleValues) {
         StringBuilder builder = new StringBuilder();
         int width = 0;
@@ -514,6 +603,11 @@ public class SudoKuBoard {
         return builder.toString();
     }
 
+    /**
+     * return possible numbers of all cells assigned with DIGITS numbers
+     *
+     * @return possible numbers of all cells assigned with DIGITS numbers
+     */
     public String[] newPossibleValues() {
         String[] possibleValues = new String[CELL_SIZE];
         for (int i = 0; i < CELL_SIZE; i++) {
@@ -522,48 +616,79 @@ public class SudoKuBoard {
         return possibleValues;
     }
 
-    public String random_puzzle(int min, int max) {
-        StringBuilder builder = null;
-        String[] possibleValues = newPossibleValues();
-        int count = 0;
-        while (!reachTarget(possibleValues, min, max)) {
-            count++;
+    /**
+     * generate a random sudoKu. number of filled cells in the puzzle is between
+     * {@param filledCellMinNumber} and {@param filledCellMaxNumber}.
+     *
+     * @param filledCellMinNumber minimum filled cells
+     * @param filledCellMaxNumber maximum filled cells
+     * @return a string represent a sudoKu, character '.'(dot) means unfilled cell, character '1' to
+     * '9' means the specified cell is assigned with correspond digit.
+     */
+    public String randomSudoKuPuzzle(int filledCellMinNumber, int filledCellMaxNumber) {
+        StringBuilder boardStringBuilder = null;
+        String[] possibleValues = null;
+        while (!reachSudoKuGenerateTarget(possibleValues,
+                filledCellMinNumber, filledCellMaxNumber)) {
             possibleValues = newPossibleValues();
-            List<Integer> order = new ArrayList<>();
-            for (int i = 0; i < CELL_SIZE; i++) {
-                order.add(i);
+            List<Integer> cellIndexOrder = new ArrayList<>();
+            for (int cellIndex = 0; cellIndex < CELL_SIZE; cellIndex++) {
+                cellIndexOrder.add(cellIndex);
             }
-            Collections.shuffle(order, new Random(System.currentTimeMillis()));
-            for (int i = 0; i < CELL_SIZE; i++) {
-                if (!assignValue(possibleValues, /*index=*/order.get(i), getRandomChar(possibleValues[order.get(i)]))) {
+            /*
+            generate a random order of cellIndex
+             */
+            Collections.shuffle(cellIndexOrder, new Random(System.currentTimeMillis()));
+            for (int orderIndex = 0; orderIndex < cellIndexOrder.size(); orderIndex++) {
+                if (!assignValue(possibleValues, /*cellIndex=*/cellIndexOrder.get(orderIndex),
+                        /*number=*/getRandomChar(possibleValues[cellIndexOrder.get(orderIndex)]))) {
                     break;
                 } else {
-                    if (reachTarget(possibleValues, min, max)) {
-                        builder = new StringBuilder();
+                    if (reachSudoKuGenerateTarget(possibleValues,
+                            filledCellMinNumber, filledCellMaxNumber)) {
+                        boardStringBuilder = new StringBuilder();
                         for (int j = 0; j < possibleValues.length; j++) {
                             if (possibleValues[j].length() > 1) {
-                                builder.append(".");
+                                boardStringBuilder.append(".");
                             } else {
-                                builder.append(possibleValues[j]);
+                                boardStringBuilder.append(possibleValues[j]);
                             }
                         }
+                        /*
+                        generate a desired sudoKu
+                         */
                         break;
                     }
                 }
             }
         }
-        return builder.toString();
+        assert boardStringBuilder != null;
+        return boardStringBuilder.toString();
     }
 
-    private boolean reachTarget(String[] possibleValues, int minLimit, int maxLimit) {
-        Set<String> differentNumberSet = new HashSet<>();
-        int count = 0;
-        for (int i = 0; i < possibleValues.length; i++) {
-            if (possibleValues[i].length() == 1) {
-                count++;
-                differentNumberSet.add(possibleValues[i]);
+    /**
+     * judge whether the given sudoKu meet the generate target
+     *
+     * @param possibleValues       possible numbers of all cells assigned with DIGITS numbers
+     * @param filledCellsMinNumber minimum filled cells
+     * @param filledCellsMaxNumber maximum filled cells
+     * @return true if the used numbers meet the target {@value INIT_DIFFERENT_NUMBERS} and number
+     * of filled cells is in the range.
+     */
+    private boolean reachSudoKuGenerateTarget(
+            String[] possibleValues, int filledCellsMinNumber, int filledCellsMaxNumber) {
+        Set<String> numbersUsedSet = new HashSet<>();
+        if (possibleValues == null) {
+            return false;
+        }
+        int filledCellCount = 0;
+        for (int cellIndex = 0; cellIndex < possibleValues.length; cellIndex++) {
+            if (possibleValues[cellIndex].length() == 1) {
+                filledCellCount++;
+                numbersUsedSet.add(possibleValues[cellIndex]);
             }
         }
-        return count >= minLimit && count <= maxLimit && differentNumberSet.size() >= INIT_DIFFERENT_NUMBERS;
+        return filledCellCount >= filledCellsMinNumber && filledCellCount <= filledCellsMaxNumber
+                && numbersUsedSet.size() >= INIT_DIFFERENT_NUMBERS;
     }
 }
