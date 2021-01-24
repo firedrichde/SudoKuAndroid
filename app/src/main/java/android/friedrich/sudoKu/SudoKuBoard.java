@@ -58,6 +58,21 @@ public class SudoKuBoard {
     private static final int RELATED_UNITS_SIZE = 3;
 
     /**
+     * the offset of row units
+     */
+    private static final int ROW_UNIT_OFFSET = 0;
+
+    /**
+     * the offset of col units
+     */
+    private static final int COL_UNIT_OFFSET = 9;
+
+    /**
+     * the offset of sub board units
+     */
+    private static final int SUB_BOARD_UNIT_OFFSET = 18;
+
+    /**
      * the generator for creating a random board
      */
     private static SudoKuBoard generator;
@@ -447,7 +462,7 @@ public class SudoKuBoard {
 
 
     /**
-     * return the array of relative unit's index at the specified position of Gird squares.
+     * return the array of relative unit's index at the specified position of SudoKu squares.
      *
      * @param index index of the specified Grid cell
      * @return the array of Grid unit's index that contains the specified square
@@ -466,6 +481,16 @@ public class SudoKuBoard {
         // subGird unit related to the specified square
         unitIndexArray[2] = subGridIndex + 18;
         return unitIndexArray;
+    }
+
+    /**
+     * return the unit at the specified position of SudoKu
+     *
+     * @param index index of the unit
+     * @return the array of cell index that make up the unit
+     */
+    public static int[] getUnitByIndex(int index) {
+        return sUnits[index];
     }
 
     @Deprecated
@@ -517,22 +542,22 @@ public class SudoKuBoard {
     public static void setGridUnits() {
         sUnits = new int[UNIT_NUMBER][UNIT_SIZE];
         // all row units
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                sUnits[i][j] = i * UNIT_SIZE + j;
+        for (int i = ROW_UNIT_OFFSET; i < COL_UNIT_OFFSET; i++) {
+            for (int j = 0; j < UNIT_SIZE; j++) {
+                sUnits[i][j] = (i - ROW_UNIT_OFFSET) * UNIT_SIZE + j;
             }
         }
-        // all col units
-        for (int i = 9; i < 18; i++) {
-            for (int j = 0; j < 9; j++) {
-                sUnits[i][j] = j * UNIT_SIZE + i - 9;
+        // all column units
+        for (int i = COL_UNIT_OFFSET; i < SUB_BOARD_UNIT_OFFSET; i++) {
+            for (int j = 0; j < UNIT_SIZE; j++) {
+                sUnits[i][j] = j * UNIT_SIZE + i - COL_UNIT_OFFSET;
             }
         }
         // all subBoard units
-        for (int i = 18; i < UNIT_NUMBER; i++) {
+        for (int i = SUB_BOARD_UNIT_OFFSET; i < UNIT_NUMBER; i++) {
             int count = 0;
-            int j = (i - 18) / 3;
-            int p = (i - 18) % 3;
+            int j = (i - SUB_BOARD_UNIT_OFFSET) / 3;
+            int p = (i - SUB_BOARD_UNIT_OFFSET) % 3;
             int base = j * 27 + 3 * p;
             for (int k = 0; k < 3; k++) {
                 for (int l = 0; l < 3; l++) {

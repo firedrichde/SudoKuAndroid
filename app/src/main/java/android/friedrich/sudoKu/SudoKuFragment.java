@@ -43,7 +43,7 @@ public class SudoKuFragment extends Fragment {
     /**
      * current number for assignment
      */
-    private String mActiveNumber;
+    private byte mActiveNumber;
     private Cell[] mCells;
 
     private CellsManager mCellsManager;
@@ -81,13 +81,14 @@ public class SudoKuFragment extends Fragment {
         mButtonNumberList = new ArrayList<>();
         mCells = new Cell[SudoKuBoard.CELL_SIZE];
         mCellsManager = new CellsManager(mCells);
+        mActiveNumber = SudoKuConstant.NUMBER_UNCERTAIN;
         for (int i = 0; i < mCells.length; i++) {
             mCells[i] = new Cell(i);
         }
         if (mBoardString == null || mBoardString.equals("")) {
             mSudoKuGenerateTask = new SudoKuGenerateTask();
             mSudoKuGenerateTask.execute();
-        }else{
+        } else {
             bindCells(mBoardString);
         }
     }
@@ -101,16 +102,17 @@ public class SudoKuFragment extends Fragment {
         mBoardView.setListener(new SudoKuBoardView.onTouchListener() {
             @Override
             public void handle(int row, int col) {
-                int index = Cell.getIndex(row, col);
-                // modify cell value if the value is assigned by user
-                if (mActiveNumber != null && !mActiveNumber.equals("") && !mCells[index].isGenerateByProgram()) {
-
-                    mCells[index].setPossibleValue(mActiveNumber);
-                    Log.i(TAG, "handle: index=" + index + ", number=" + mActiveNumber);
+                 /*
+                 modify cell value if the value is assigned by user
+                  */
+                if (!mCellsManager.isGenerateByProgram(row, col)) {
+                    mCellsManager.assignValue(row, col, mActiveNumber);
+                    Log.i(TAG, "handle: assign cell (" + row+", "+col+")"
+                            + ", number=" + mActiveNumber);
                 }
             }
         });
-        mBoardView.bindCells(mCells);
+        mBoardView.bindCellsManager(mCellsManager);
         mButton1 = view.findViewById(R.id.button_number_1);
         mButton2 = view.findViewById(R.id.button_number_2);
         mButton3 = view.findViewById(R.id.button_number_3);
@@ -136,7 +138,7 @@ public class SudoKuFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     // set the value for assignment
-                    mActiveNumber = button.getText().toString();
+                    mActiveNumber = Byte.parseByte(button.getText().toString());
                     Log.i(TAG, "onClick: active number " + mActiveNumber);
                 }
             });
@@ -147,7 +149,7 @@ public class SudoKuFragment extends Fragment {
                 /*
                  set the value to Cell.UNFILLED_VALUE in order to remove previous assignment
                  */
-                mActiveNumber = Cell.UNFILLED_VALUE;
+                mActiveNumber = SudoKuConstant.NUMBER_UNCERTAIN;
                 Log.i(TAG, "onClick: reset active number");
             }
         });
@@ -181,10 +183,11 @@ public class SudoKuFragment extends Fragment {
         for (int i = 0; i < gridString.length(); i++) {
             char value = gridString.charAt(i);
             if (value != SudoKuBoard.dot) {
-                mCells[i].setPossibleValue(String.valueOf(value));
+                mCells[i].setNumber(Byte.parseByte(String.valueOf(value)));
                 mCells[i].setGenerateByProgram(true);
             }
         }
+        mBoardView.invalidate();
     }
 
     @Override
