@@ -136,12 +136,12 @@ public class SudoKuBoard {
     }
 
     public static void main(String[] args) throws Exception {
-        String values = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......";
-        SudoKuBoard sudoKuBoardSolver = new SudoKuBoard();
-        String gridString = Generate();
-        System.out.println(gridString);
-        sudoKuBoardSolver.solve(gridString);
-        System.out.println(sudoKuBoardSolver);
+//        String values = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......";
+//        SudoKuBoard sudoKuBoardSolver = new SudoKuBoard();
+//        String gridString = GeneratePuzzle();
+//        System.out.println(gridString);
+//        sudoKuBoardSolver.solve(gridString);
+//        System.out.println(sudoKuBoardSolver);
     }
 
     /**
@@ -186,7 +186,7 @@ public class SudoKuBoard {
         return true;
     }
 
-    public static String Generate() throws Exception {
+    public static SudoKuSaver GeneratePuzzle() throws Exception {
         if (generator == null) {
             generator = new SudoKuBoard();
         }
@@ -198,11 +198,18 @@ public class SudoKuBoard {
          */
         gridString = generator.randomSudoKuPuzzle(limit, limit + 10);
         SudoKuBoard sudoKuBoard = new SudoKuBoard();
+        AssignmentTracker assignmentTracker = new AssignmentTracker();
+        sudoKuBoard.bindAssignmentTracker(assignmentTracker);
         while (!sudoKuBoard.solve(gridString)) {
             gridString = generator.randomSudoKuPuzzle(limit, limit + 10);
             sudoKuBoard = new SudoKuBoard();
+            assignmentTracker.clear();
+            sudoKuBoard.bindAssignmentTracker(assignmentTracker);
         }
-        return gridString;
+        SudoKuSaver sudoKuSaver = new SudoKuSaver();
+        sudoKuSaver.setPuzzleString(gridString);
+        sudoKuSaver.setAssignmentTracker(assignmentTracker);
+        return sudoKuSaver;
     }
 
     /**

@@ -1,5 +1,6 @@
 package android.friedrich.sudoKu;
 
+import android.icu.lang.UScript;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -39,6 +40,15 @@ public class SudoKuFragment extends Fragment {
     private Button mButton8;
     private Button mButton9;
     private Button mButtonDelete;
+    /**
+     * button is designed for show next assignment
+     */
+    private Button mButtonShowNextStep;
+
+    /**
+     * button is designed for show previous assignment
+     */
+    private Button mButtonShowPreviousStep;
     private List<Button> mButtonNumberList;
     /**
      * current number for assignment
@@ -52,6 +62,8 @@ public class SudoKuFragment extends Fragment {
      */
     private SudoKuGenerateTask mSudoKuGenerateTask;
     private String mBoardString;
+
+    private SudoKuSaver mSudoKuSaver;
 
     public SudoKuFragment() {
         // Required empty public constructor
@@ -72,12 +84,12 @@ public class SudoKuFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (savedInstanceState != null) {
-            /*
+        /*if (savedInstanceState != null) {
+            *//*
             load the previous SudoKu if the activity is still in progress
-             */
+             *//*
             mBoardString = savedInstanceState.getString(KEY_BOARD_STRING, "");
-        }
+        }*/
         mButtonNumberList = new ArrayList<>();
         mCells = new Cell[SudoKuBoard.CELL_SIZE];
         mCellsManager = new CellsManager(mCells);
@@ -89,7 +101,7 @@ public class SudoKuFragment extends Fragment {
             mSudoKuGenerateTask = new SudoKuGenerateTask();
             mSudoKuGenerateTask.execute();
         } else {
-            bindCells(mBoardString);
+//            bindCells(mBoardString);
         }
     }
 
@@ -123,6 +135,8 @@ public class SudoKuFragment extends Fragment {
         mButton8 = view.findViewById(R.id.button_number_8);
         mButton9 = view.findViewById(R.id.button_number_9);
         mButtonDelete = view.findViewById(R.id.button_delete_number);
+        mButtonShowNextStep = view.findViewById(R.id.button_show_next);
+        mButtonShowPreviousStep = view.findViewById(R.id.button_show_previous);
         mButtonNumberList.add(mButton1);
         mButtonNumberList.add(mButton2);
         mButtonNumberList.add(mButton3);
@@ -153,28 +167,34 @@ public class SudoKuFragment extends Fragment {
                 Log.i(TAG, "onClick: reset active number");
             }
         });
+
+        mButtonShowNextStep.setOnClickListener(this::showNextAssignment);
+        mButtonShowPreviousStep.setOnClickListener(this::showPreviousAssignment);
         return view;
     }
 
-    private class SudoKuGenerateTask extends AsyncTask<Void, Void, String> {
+    private class SudoKuGenerateTask extends AsyncTask<Void, Void, SudoKuSaver> {
         @Override
-        protected String doInBackground(Void... voids) {
+        protected SudoKuSaver doInBackground(Void... voids) {
+            SudoKuSaver sudoKuSaver = null;
             String boardString = "";
             try {
-                boardString = SudoKuBoard.Generate();
+                sudoKuSaver= SudoKuBoard.GeneratePuzzle();
             } catch (Exception e) {
                 Log.e(TAG, "doInBackground: sudoKu generate failed", e);
             }
-            return boardString;
+            return sudoKuSaver;
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
+        protected void onPostExecute(SudoKuSaver sudoKuSaver) {
+            super.onPostExecute(sudoKuSaver);
             /*
              bind the grid initial values to cells
              */
-            bindCells(s);
+            SudoKuSaverManager.getManager(getActivity()).addSudoKuSaver(sudoKuSaver);
+            mSudoKuSaver = sudoKuSaver;
+            bindCells(sudoKuSaver.getPuzzleString());
         }
     }
 
@@ -187,6 +207,10 @@ public class SudoKuFragment extends Fragment {
                 mCells[i].setGenerateByProgram(true);
             }
         }
+        if (mSudoKuSaver==null){
+            mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
+        }
+        AssignmentPreference.setPreferenceAssignmentStep(getActivity(),0);
         mBoardView.invalidate();
     }
 
@@ -195,5 +219,42 @@ public class SudoKuFragment extends Fragment {
         super.onSaveInstanceState(outState);
         //save the grid initial values when fragment is paused
         outState.putSerializable(KEY_BOARD_STRING, mBoardString);
+    }
+
+    public void showNextAssignment(View view) {
+       int stepIndex = showAssignment(false);
+       if (stepIndex+mSudoKuSaver.getAssignmentOffset() < SudoKuConstant.BOARD_CELL_SIZE){
+           AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex+1);
+       }
+    }
+
+    public void showPreviousAssignment(View view) {
+        int stepIndex = showAssignment(true);
+        if (stepIndex >0){
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex-1);
+        }
+    }
+
+    public int showAssignment(boolean previous){
+        int stepIndex = AssignmentPreference.getPreferenceAssignmentStep(getActivity());
+        Log.i(TAG, "showAssignment: step="+stepIndex);
+        if (stepIndex == -1) {
+            Log.e(TAG, "showNextAssignment: should set up the step of assignment");
+        }else {
+            if (mSudoKuSaver == null) {
+                mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
+            }
+            SudoKuSaver.Assignment assignment = mSudoKuSaver.getAssignment(stepIndex);
+            if (assignment == null) {
+                return -1;
+            }
+            if (previous) {
+                mCellsManager.assignValue(assignment.getRow(),assignment.getCol(),SudoKuConstant.NUMBER_UNCERTAIN);
+            }else {
+                mCellsManager.assignValue(assignment.getRow(),assignment.getCol(),assignment.getNumber());
+            }
+            mBoardView.invalidate();
+        }
+        return stepIndex;
     }
 }
