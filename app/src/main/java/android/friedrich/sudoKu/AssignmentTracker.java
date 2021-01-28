@@ -111,6 +111,18 @@ public class AssignmentTracker{
         }
     }
 
+    public byte getLastRow() {
+        return tracker.peek().row;
+    }
+
+    public byte getLastCol() {
+        return tracker.peek().col;
+    }
+
+    public byte getLastNumber() {
+        return tracker.peek().number;
+    }
+
     public boolean isOn() {
         return isOn;
     }

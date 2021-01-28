@@ -1,6 +1,5 @@
 package android.friedrich.sudoKu;
 
-import android.icu.lang.UScript;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -25,6 +24,14 @@ public class SudoKuFragment extends Fragment {
     private static final String TAG = "SudoKuFragment";
     private static final String KEY_BOARD_STRING = "boardString";
 
+    /**
+     * assignment is not on focus
+     */
+    private static final byte ASSIGNMENT_UN_FOCUS = 10;
+
+    /**
+     * view for SudoKu board
+     */
     private SudoKuBoardView mBoardView;
 
     /**
@@ -40,6 +47,16 @@ public class SudoKuFragment extends Fragment {
     private Button mButton8;
     private Button mButton9;
     private Button mButtonDelete;
+
+    /**
+     * button is designed for undo assignment operation
+     */
+    private Button mButtonUndo;
+
+    /**
+     * button is designed for redo assignment operation
+     */
+    private Button mButtonRedo;
     /**
      * button is designed for show next assignment
      */
@@ -64,6 +81,11 @@ public class SudoKuFragment extends Fragment {
     private String mBoardString;
 
     private SudoKuSaver mSudoKuSaver;
+
+    private SudoKuSaver mUserAssignmentSaver;
+
+    private SudoKuSaverManager mSaverManager;
+    private boolean mCanUndo;
 
     public SudoKuFragment() {
         // Required empty public constructor
@@ -91,9 +113,21 @@ public class SudoKuFragment extends Fragment {
             mBoardString = savedInstanceState.getString(KEY_BOARD_STRING, "");
         }*/
         mButtonNumberList = new ArrayList<>();
+        mSaverManager = SudoKuSaverManager.getManager(getActivity());
         mCells = new Cell[SudoKuBoard.CELL_SIZE];
         mCellsManager = new CellsManager(mCells);
-        mActiveNumber = SudoKuConstant.NUMBER_UNCERTAIN;
+        mCellsManager.setCellAssignmentListener(new CellsManager.AssignmentListener() {
+            @Override
+            public void onAssign(int row, int col, byte number) {
+                if (mUserAssignmentSaver==null) {
+                    mUserAssignmentSaver = mSaverManager.getUserSaver();
+                }
+                if (mUserAssignmentSaver != null) {
+                    mUserAssignmentSaver.addAssignment((byte)row,(byte)col, number);
+                }
+            }
+        });
+        mActiveNumber = ASSIGNMENT_UN_FOCUS;
         for (int i = 0; i < mCells.length; i++) {
             mCells[i] = new Cell(i);
         }
@@ -103,6 +137,7 @@ public class SudoKuFragment extends Fragment {
         } else {
 //            bindCells(mBoardString);
         }
+        mCanUndo = false;
     }
 
     @Override
@@ -117,10 +152,11 @@ public class SudoKuFragment extends Fragment {
                  /*
                  modify cell value if the value is assigned by user
                   */
-                if (!mCellsManager.isGenerateByProgram(row, col)) {
+                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber!=ASSIGNMENT_UN_FOCUS) {
                     mCellsManager.assignValue(row, col, mActiveNumber);
                     Log.i(TAG, "handle: assign cell (" + row+", "+col+")"
                             + ", number=" + mActiveNumber);
+                    mCanUndo = true;
                 }
             }
         });
@@ -135,8 +171,10 @@ public class SudoKuFragment extends Fragment {
         mButton8 = view.findViewById(R.id.button_number_8);
         mButton9 = view.findViewById(R.id.button_number_9);
         mButtonDelete = view.findViewById(R.id.button_delete_number);
-        mButtonShowNextStep = view.findViewById(R.id.button_show_next);
-        mButtonShowPreviousStep = view.findViewById(R.id.button_show_previous);
+        mButtonShowNextStep = view.findViewById(R.id.button_show_program_next);
+        mButtonShowPreviousStep = view.findViewById(R.id.button_show_program_previous);
+        mButtonUndo = view.findViewById(R.id.button_undo);
+        mButtonRedo = view.findViewById(R.id.button_redo);
         mButtonNumberList.add(mButton1);
         mButtonNumberList.add(mButton2);
         mButtonNumberList.add(mButton3);
@@ -168,8 +206,10 @@ public class SudoKuFragment extends Fragment {
             }
         });
 
-        mButtonShowNextStep.setOnClickListener(this::showNextAssignment);
-        mButtonShowPreviousStep.setOnClickListener(this::showPreviousAssignment);
+        mButtonShowNextStep.setOnClickListener(this::showNextAssignmentByProgram);
+        mButtonShowPreviousStep.setOnClickListener(this::showPreviousAssignmentByProgram);
+        mButtonUndo.setOnClickListener(this::undoAssignment);
+        mButtonRedo.setOnClickListener(this::redoAssignment);
         return view;
     }
 
@@ -192,8 +232,11 @@ public class SudoKuFragment extends Fragment {
             /*
              bind the grid initial values to cells
              */
-            SudoKuSaverManager.getManager(getActivity()).addSudoKuSaver(sudoKuSaver);
+//            SudoKuSaverManager saverManager = SudoKuSaverManager.getManager(getActivity());
+            mSaverManager.addSudoKuSaver(sudoKuSaver);
             mSudoKuSaver = sudoKuSaver;
+            mUserAssignmentSaver = new SudoKuSaver(mSudoKuSaver);
+            mSaverManager.addSudoKuSaverByUser(mUserAssignmentSaver);
             bindCells(sudoKuSaver.getPuzzleString());
         }
     }
@@ -221,30 +264,66 @@ public class SudoKuFragment extends Fragment {
         outState.putSerializable(KEY_BOARD_STRING, mBoardString);
     }
 
-    public void showNextAssignment(View view) {
-       int stepIndex = showAssignment(false);
+    /**
+     * show next assignment by program
+     * @param view the specified button
+     */
+    public void showNextAssignmentByProgram(View view) {
+        if (mSudoKuSaver == null) {
+            mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
+        }
+        int stepIndex = showAssignment(false, mSudoKuSaver);
        if (stepIndex+mSudoKuSaver.getAssignmentOffset() < SudoKuConstant.BOARD_CELL_SIZE){
            AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex+1);
        }
     }
 
-    public void showPreviousAssignment(View view) {
-        int stepIndex = showAssignment(true);
+    /**
+     * show previous assignment by program
+     * @param view the specified button
+     */
+    public void showPreviousAssignmentByProgram(View view) {
+        if (mSudoKuSaver == null) {
+            mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
+        }
+        int stepIndex = showAssignment(true, mSudoKuSaver);
         if (stepIndex >0){
             AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex-1);
         }
     }
 
-    public int showAssignment(boolean previous){
+    /**
+     * show next assignment by user
+     * @param view the specified button
+     */
+    public void showNextAssignmentByUser(View view) {
+        if (mUserAssignmentSaver == null) {
+            mUserAssignmentSaver = SudoKuSaverManager.getManager(getActivity()).getUserSaver();
+        }
+        int stepIndex = showAssignment(false,mUserAssignmentSaver);
+        if (stepIndex != -1/*the specified assignment exists*/)  {
+           AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex+1);
+        }
+    }
+
+    public void showPreviousAssignmentByUser(View view) {
+        if (mUserAssignmentSaver == null) {
+            mUserAssignmentSaver = SudoKuSaverManager.getManager(getActivity()).getUserSaver();
+        }
+        int stepIndex = showAssignment(true,mUserAssignmentSaver);
+        if (stepIndex != -1) {
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex-1);
+        }
+    }
+
+    private int showAssignment(boolean previous, SudoKuSaver sudoKuSaver){
+        mActiveNumber = ASSIGNMENT_UN_FOCUS;
         int stepIndex = AssignmentPreference.getPreferenceAssignmentStep(getActivity());
         Log.i(TAG, "showAssignment: step="+stepIndex);
         if (stepIndex == -1) {
             Log.e(TAG, "showNextAssignment: should set up the step of assignment");
         }else {
-            if (mSudoKuSaver == null) {
-                mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
-            }
-            SudoKuSaver.Assignment assignment = mSudoKuSaver.getAssignment(stepIndex);
+            SudoKuSaver.Assignment assignment = sudoKuSaver.getAssignment(stepIndex);
             if (assignment == null) {
                 return -1;
             }
@@ -256,5 +335,32 @@ public class SudoKuFragment extends Fragment {
             mBoardView.invalidate();
         }
         return stepIndex;
+    }
+
+
+    public void undoAssignment(View view) {
+        SudoKuSaver.Assignment lastAssignment = mUserAssignmentSaver.getLastAssignment();
+        if (lastAssignment == null || !mCanUndo) {
+            return;
+        } else {
+            mCellsManager.assignValue(lastAssignment.getRow(),
+                                      lastAssignment.getCol(),
+                                      SudoKuConstant.NUMBER_UNCERTAIN);
+            mCanUndo = !mCanUndo;
+            mBoardView.invalidate();
+        }
+    }
+
+    public void redoAssignment(View view) {
+        SudoKuSaver.Assignment secondLastAssignment = mUserAssignmentSaver.getSecondLastAssignment();
+        if (secondLastAssignment == null || mCanUndo) {
+            return;
+        } else {
+            mCellsManager.assignValue(secondLastAssignment.getRow(),
+                    secondLastAssignment.getCol(),
+                    secondLastAssignment.getNumber());
+            mCanUndo = !mCanUndo;
+            mBoardView.invalidate();
+        }
     }
 }

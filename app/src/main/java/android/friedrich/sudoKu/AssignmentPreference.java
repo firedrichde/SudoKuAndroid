@@ -6,6 +6,7 @@ import android.preference.PreferenceManager;
 
 public class AssignmentPreference {
     public static final String PRE_ASSIGNMENT_STEP = "android.friedrich.sudoKu.assignmentStep";
+//    public static final String P
 
     public static void setPreferenceAssignmentStep(Context context, int step){
         SharedPreferences sharedPreferences = context.

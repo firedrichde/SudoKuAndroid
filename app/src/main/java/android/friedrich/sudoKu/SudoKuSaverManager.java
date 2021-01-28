@@ -9,7 +9,8 @@ public class SudoKuSaverManager {
     private static SudoKuSaverManager sManager;
 
     private Context mContext;
-    private List<SudoKuSaver> mSudoKuSaverList;
+    private List<SudoKuSaver> mSudoKuSaverListForProgram;
+    private List<SudoKuSaver> mSudoKuSaversListForUser;
 
     public static SudoKuSaverManager getManager(Context context) {
         if (sManager == null) {
@@ -20,17 +21,24 @@ public class SudoKuSaverManager {
 
     public SudoKuSaverManager(Context context) {
         mContext = context;
-        mSudoKuSaverList = new ArrayList<>();
+        mSudoKuSaverListForProgram = new ArrayList<>();
+        mSudoKuSaversListForUser = new ArrayList<>();
     }
 
     public void addSudoKuSaver(SudoKuSaver sudoKuSaver) {
-        mSudoKuSaverList.add(sudoKuSaver);
+        mSudoKuSaverListForProgram.add(sudoKuSaver);
+    }
+
+    public void addSudoKuSaverByUser(SudoKuSaver sudoKuSaver) {
+        mSudoKuSaversListForUser.add(sudoKuSaver);
     }
 
     /*
     for test
      */
     public SudoKuSaver get() {
-        return mSudoKuSaverList.get(0);
+        return mSudoKuSaverListForProgram.get(0);
     }
+
+    public SudoKuSaver getUserSaver() {return mSudoKuSaversListForUser.get(0);}
 }

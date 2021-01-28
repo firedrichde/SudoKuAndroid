@@ -99,19 +99,33 @@
             android:layout_column="1"
             android:text="@string/delete_assignment" />
         <Button
-            android:id="@+id/button_show_next"
+            android:id="@+id/button_show_program_next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_row="3"
             android:layout_column="2"
-            android:text="@string/show_next"/>
+            android:text="@string/show_program_next"/>
         <Button
-            android:id="@+id/button_show_previous"
+            android:id="@+id/button_show_program_previous"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_row="3"
             android:layout_column="3"
-            android:text="@string/show_previous"/>
+            android:text="@string/show_program_previous"/>
+        <Button
+            android:id="@+id/button_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="0"
+            android:layout_column="3"
+            android:text="@string/assignment_undo"/>
+        <Button
+            android:id="@+id/button_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="1"
+            android:layout_column="3"
+            android:text="@string/assignment_redo"/>
     </GridLayout>
 
 </RelativeLayout>
