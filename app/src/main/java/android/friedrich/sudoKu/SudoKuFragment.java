@@ -87,6 +87,8 @@ public class SudoKuFragment extends Fragment {
     private SudoKuSaverManager mSaverManager;
     private boolean mCanUndo;
 
+    private boolean mShowPrevious;
+
     public SudoKuFragment() {
         // Required empty public constructor
     }
@@ -106,8 +108,9 @@ public class SudoKuFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate: ");
         /*if (savedInstanceState != null) {
-            *//*
+         *//*
             load the previous SudoKu if the activity is still in progress
              *//*
             mBoardString = savedInstanceState.getString(KEY_BOARD_STRING, "");
@@ -119,11 +122,11 @@ public class SudoKuFragment extends Fragment {
         mCellsManager.setCellAssignmentListener(new CellsManager.AssignmentListener() {
             @Override
             public void onAssign(int row, int col, byte number) {
-                if (mUserAssignmentSaver==null) {
+                if (mUserAssignmentSaver == null) {
                     mUserAssignmentSaver = mSaverManager.getUserSaver();
                 }
                 if (mUserAssignmentSaver != null) {
-                    mUserAssignmentSaver.addAssignment((byte)row,(byte)col, number);
+                    mUserAssignmentSaver.addAssignment((byte) row, (byte) col, number);
                 }
             }
         });
@@ -152,9 +155,9 @@ public class SudoKuFragment extends Fragment {
                  /*
                  modify cell value if the value is assigned by user
                   */
-                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber!=ASSIGNMENT_UN_FOCUS) {
+                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber != ASSIGNMENT_UN_FOCUS) {
                     mCellsManager.assignValue(row, col, mActiveNumber);
-                    Log.i(TAG, "handle: assign cell (" + row+", "+col+")"
+                    Log.i(TAG, "handle: assign cell (" + row + ", " + col + ")"
                             + ", number=" + mActiveNumber);
                     mCanUndo = true;
                 }
@@ -219,7 +222,7 @@ public class SudoKuFragment extends Fragment {
             SudoKuSaver sudoKuSaver = null;
             String boardString = "";
             try {
-                sudoKuSaver= SudoKuBoard.GeneratePuzzle();
+                sudoKuSaver = SudoKuBoard.GeneratePuzzle();
             } catch (Exception e) {
                 Log.e(TAG, "doInBackground: sudoKu generate failed", e);
             }
@@ -250,10 +253,10 @@ public class SudoKuFragment extends Fragment {
                 mCells[i].setGenerateByProgram(true);
             }
         }
-        if (mSudoKuSaver==null){
+        if (mSudoKuSaver == null) {
             mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
         }
-        AssignmentPreference.setPreferenceAssignmentStep(getActivity(),0);
+        AssignmentPreference.setPreferenceAssignmentStep(getActivity(), -1);
         mBoardView.invalidate();
     }
 
@@ -266,6 +269,7 @@ public class SudoKuFragment extends Fragment {
 
     /**
      * show next assignment by program
+     *
      * @param view the specified button
      */
     public void showNextAssignmentByProgram(View view) {
@@ -273,13 +277,17 @@ public class SudoKuFragment extends Fragment {
             mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
         }
         int stepIndex = showAssignment(false, mSudoKuSaver);
-       if (stepIndex+mSudoKuSaver.getAssignmentOffset() < SudoKuConstant.BOARD_CELL_SIZE){
-           AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex+1);
-       }
+        if (stepIndex == -1) {
+            return;
+        }
+        if (stepIndex + mSudoKuSaver.getAssignmentOffset() < SudoKuConstant.BOARD_CELL_SIZE) {
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex);
+        }
     }
 
     /**
      * show previous assignment by program
+     *
      * @param view the specified button
      */
     public void showPreviousAssignmentByProgram(View view) {
@@ -287,22 +295,26 @@ public class SudoKuFragment extends Fragment {
             mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).get();
         }
         int stepIndex = showAssignment(true, mSudoKuSaver);
-        if (stepIndex >0){
-            AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex-1);
+        if (stepIndex == -1) {
+            return;
+        }
+        if (stepIndex >= 0) {
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex);
         }
     }
 
     /**
      * show next assignment by user
+     *
      * @param view the specified button
      */
     public void showNextAssignmentByUser(View view) {
         if (mUserAssignmentSaver == null) {
             mUserAssignmentSaver = SudoKuSaverManager.getManager(getActivity()).getUserSaver();
         }
-        int stepIndex = showAssignment(false,mUserAssignmentSaver);
-        if (stepIndex != -1/*the specified assignment exists*/)  {
-           AssignmentPreference.setPreferenceAssignmentStep(getActivity(),stepIndex+1);
+        int stepIndex = showAssignment(false, mUserAssignmentSaver);
+        if (stepIndex != -1/*the specified assignment exists*/) {
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex + 1);
         }
     }
 
@@ -310,30 +322,39 @@ public class SudoKuFragment extends Fragment {
         if (mUserAssignmentSaver == null) {
             mUserAssignmentSaver = SudoKuSaverManager.getManager(getActivity()).getUserSaver();
         }
-        int stepIndex = showAssignment(true,mUserAssignmentSaver);
+        int stepIndex = showAssignment(true, mUserAssignmentSaver);
         if (stepIndex != -1) {
-            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex-1);
+            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex - 1);
         }
     }
 
-    private int showAssignment(boolean previous, SudoKuSaver sudoKuSaver){
+    private int showAssignment(boolean previous, SudoKuSaver sudoKuSaver) {
         mActiveNumber = ASSIGNMENT_UN_FOCUS;
         int stepIndex = AssignmentPreference.getPreferenceAssignmentStep(getActivity());
-        Log.i(TAG, "showAssignment: step="+stepIndex);
-        if (stepIndex == -1) {
-            Log.e(TAG, "showNextAssignment: should set up the step of assignment");
-        }else {
+        Log.i(TAG, "showAssignment: step=" + stepIndex);
+        if (previous) {
+            if (mShowPrevious) {
+                stepIndex--;
+            }
+//            stepIndex--;
             SudoKuSaver.Assignment assignment = sudoKuSaver.getAssignment(stepIndex);
             if (assignment == null) {
                 return -1;
             }
-            if (previous) {
-                mCellsManager.assignValue(assignment.getRow(),assignment.getCol(),SudoKuConstant.NUMBER_UNCERTAIN);
-            }else {
-                mCellsManager.assignValue(assignment.getRow(),assignment.getCol(),assignment.getNumber());
+            mCellsManager.assignValue(assignment.getRow(), assignment.getCol(), SudoKuConstant.NUMBER_UNCERTAIN);
+            mShowPrevious = true;
+        } else {
+            if (!mShowPrevious){
+                stepIndex++;
             }
-            mBoardView.invalidate();
+            SudoKuSaver.Assignment assignment = sudoKuSaver.getAssignment(stepIndex);
+            if (assignment == null) {
+                return -1;
+            }
+            mCellsManager.assignValue(assignment.getRow(), assignment.getCol(), assignment.getNumber());
+            mShowPrevious = false;
         }
+        mBoardView.invalidate();
         return stepIndex;
     }
 
@@ -344,8 +365,8 @@ public class SudoKuFragment extends Fragment {
             return;
         } else {
             mCellsManager.assignValue(lastAssignment.getRow(),
-                                      lastAssignment.getCol(),
-                                      SudoKuConstant.NUMBER_UNCERTAIN);
+                    lastAssignment.getCol(),
+                    SudoKuConstant.NUMBER_UNCERTAIN);
             mCanUndo = !mCanUndo;
             mBoardView.invalidate();
         }
@@ -362,5 +383,41 @@ public class SudoKuFragment extends Fragment {
             mCanUndo = !mCanUndo;
             mBoardView.invalidate();
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mBoardString == null) {
+            Log.i(TAG, "onResume: load puzzle ");
+//            mBoardString = loadPuzzleString();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause: dump puzzle");
+        dumpPuzzleString();
+
+    }
+
+    private void dumpPuzzleString() {
+        StringBuilder puzzleBuilder = new StringBuilder();
+        for (int row = 0; row < SudoKuConstant.UNIT_CELL_SIZE; row++) {
+            for (int col = 0; col < SudoKuConstant.UNIT_CELL_SIZE; col++) {
+                Cell cell = mCellsManager.getCell(row, col);
+                if (cell.isAssigned()) {
+                    puzzleBuilder.append(cell.getNumber());
+                } else {
+                    puzzleBuilder.append(SudoKuBoard.dot);
+                }
+            }
+        }
+        AssignmentPreference.setPrePuzzleString(getActivity(), puzzleBuilder.toString());
+    }
+
+    private String loadPuzzleString() {
+        return AssignmentPreference.getPrePuzzleString(getContext());
     }
 }
