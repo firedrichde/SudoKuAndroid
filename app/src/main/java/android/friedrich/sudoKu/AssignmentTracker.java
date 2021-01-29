@@ -1,13 +1,34 @@
 package android.friedrich.sudoKu;
 
-import android.os.SystemClock;
-
 import androidx.annotation.NonNull;
 
 import java.util.Stack;
 
 public class AssignmentTracker{
-    private static int STEP = 1;
+
+    /**
+     * record assignment
+     */
+    private Stack<Node> tracker;
+
+    /**
+     * if the tracker works
+     */
+    private boolean isOn;
+
+    /**
+     * tracker step of the assignment
+     */
+    private int step;
+
+    /**
+     * clear the tracker
+     */
+    public void clear() {
+        tracker.clear();
+        step = 0;
+    }
+
     public class Node {
         /**
          * index of cell that assigned at current step
@@ -24,10 +45,16 @@ public class AssignmentTracker{
          */
         private byte number;
 
+        private byte row;
+
+        private byte col;
+
         public Node(int cellIndex, int step, byte number) {
             this.cellIndex = cellIndex;
             this.step = step;
             this.number = number;
+            this.row= (byte) (cellIndex / SudoKuConstant.UNIT_CELL_SIZE);
+            this.col= (byte) (cellIndex % SudoKuConstant.UNIT_CELL_SIZE);
         }
 
         public int getCellIndex() {
@@ -36,6 +63,14 @@ public class AssignmentTracker{
 
         public byte getNumber() {
             return number;
+        }
+
+        public byte getRow() {
+            return row;
+        }
+
+        public byte getCol() {
+            return col;
         }
 
         @NonNull
@@ -51,13 +86,10 @@ public class AssignmentTracker{
         }
     }
 
-    private Stack<Node> tracker;
-
-    private boolean isOn;
-
     public AssignmentTracker() {
         tracker = new Stack<>();
         isOn = false;
+        step = 0;
     }
 
     public void addRecord(int row, int col, byte number) {
@@ -67,8 +99,7 @@ public class AssignmentTracker{
 
     public void addRecord(int cellIndex, byte number) {
 //        int step = tracker.size();
-        int step = STEP++;
-        Node record = new Node(cellIndex, step, number);
+        Node record = new Node(cellIndex, step++, number);
         tracker.push(record);
     }
 
@@ -78,6 +109,18 @@ public class AssignmentTracker{
         } else {
             throw new IllegalArgumentException("can't remove record");
         }
+    }
+
+    public byte getLastRow() {
+        return tracker.peek().row;
+    }
+
+    public byte getLastCol() {
+        return tracker.peek().col;
+    }
+
+    public byte getLastNumber() {
+        return tracker.peek().number;
     }
 
     public boolean isOn() {
@@ -100,8 +143,12 @@ public class AssignmentTracker{
         return tracker.peek().step;
     }
 
+    /**
+     * discard assignments after the specified tracker point
+     * @param trackerId the specified tracker history point
+     */
     public void rollback(int trackerId) {
-        System.out.println("rollback from "+getSize()+" to "+trackerId + "at step "+STEP);
+        System.out.println("rollback from "+getSize()+" to "+trackerId + "at step "+step);
         while (getSize()> trackerId) {
             removeRecord();
         }

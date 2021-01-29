@@ -2,4 +2,11 @@
     <string name="app_name">SudoKu</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="add_note">note</string>
+    <string name="delete_assignment">del</string>
+    <!--    show_program_* is used for test-->
+    <string name="show_program_next">p_next</string>
+    <string name="show_program_previous">p_pre</string>
+    <string name="assignment_undo">undo</string>
+    <string name="assignment_redo">redo</string>
 </resources>

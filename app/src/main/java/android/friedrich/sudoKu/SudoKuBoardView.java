@@ -50,6 +50,16 @@ public class SudoKuBoardView extends View {
     private Paint selectedCellTextPaint;
     private Paint commonCellTextPaint;
 
+    // TODO: 1/28/21 distinguish cell text assignment between user and program
+    /**
+     * paint for cell text assigned by user
+     */
+    private Paint userAssignmentCellTextPaint;
+
+    /**
+     * paint for cell text assigned by program
+     */
+    private Paint programAssignmentCellTextPaint;
     /**
      * paint for text of cell that conflict with its peer
      */
@@ -105,6 +115,12 @@ public class SudoKuBoardView extends View {
         lastCellAssignedTextPaint = new Paint(commonCellTextPaint);
         color = ContextCompat.getColor(context,R.color.light_green);
         lastCellAssignedTextPaint.setColor(color);
+
+        userAssignmentCellTextPaint = new Paint(commonCellTextPaint);
+        color = ContextCompat.getColor(context,R.color.light_blue);
+        userAssignmentCellTextPaint.setColor(color);
+
+        programAssignmentCellTextPaint = new Paint(commonCellTextPaint);
     }
 
     @Override
@@ -131,6 +147,8 @@ public class SudoKuBoardView extends View {
         commonCellTextPaint.setTextSize(cellSizePixel / 1.5F);
         conflictCellTextPaint.setTextSize(cellSizePixel / 1.5F);
         lastCellAssignedTextPaint.setTextSize(cellSizePixel / 1.5F);
+        userAssignmentCellTextPaint.setTextSize(cellSizePixel/1.5F);
+        programAssignmentCellTextPaint.setTextSize(cellSizePixel/1.5F);
     }
 
     private void drawLines(Canvas canvas) {
@@ -181,13 +199,13 @@ public class SudoKuBoardView extends View {
              */
             Paint paint = null;
             if (cell.isGenerateByProgram()) {
-                paint = commonCellTextPaint;
+                paint = programAssignmentCellTextPaint;
             }else if(cell.getConflictCount()>0){
                 paint = conflictCellTextPaint;
             }else if(row == rowSelected && col == colSelected) {
                 paint = selectedCellTextPaint;
             }else {
-                paint = commonCellTextPaint;
+                paint = userAssignmentCellTextPaint;
             }
             byte cellNumber = cell.getNumber();
             Rect rect = new Rect();
