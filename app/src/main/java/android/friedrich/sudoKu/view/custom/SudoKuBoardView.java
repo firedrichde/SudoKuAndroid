@@ -1,6 +1,10 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.view.custom;
 
 import android.content.Context;
+import android.friedrich.sudoKu.R;
+import android.friedrich.sudoKu.utils.SudoKuConstant;
+import android.friedrich.sudoKu.data.Cell;
+import android.friedrich.sudoKu.utils.CellsManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -13,6 +17,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
+import java.util.List;
 import java.util.Stack;
 
 public class SudoKuBoardView extends View {
@@ -113,11 +118,11 @@ public class SudoKuBoardView extends View {
         conflictCellTextPaint.setColor(color);
 
         lastCellAssignedTextPaint = new Paint(commonCellTextPaint);
-        color = ContextCompat.getColor(context,R.color.light_green);
+        color = ContextCompat.getColor(context, R.color.light_green);
         lastCellAssignedTextPaint.setColor(color);
 
         userAssignmentCellTextPaint = new Paint(commonCellTextPaint);
-        color = ContextCompat.getColor(context,R.color.light_blue);
+        color = ContextCompat.getColor(context, R.color.light_blue);
         userAssignmentCellTextPaint.setColor(color);
 
         programAssignmentCellTextPaint = new Paint(commonCellTextPaint);
@@ -147,8 +152,8 @@ public class SudoKuBoardView extends View {
         commonCellTextPaint.setTextSize(cellSizePixel / 1.5F);
         conflictCellTextPaint.setTextSize(cellSizePixel / 1.5F);
         lastCellAssignedTextPaint.setTextSize(cellSizePixel / 1.5F);
-        userAssignmentCellTextPaint.setTextSize(cellSizePixel/1.5F);
-        programAssignmentCellTextPaint.setTextSize(cellSizePixel/1.5F);
+        userAssignmentCellTextPaint.setTextSize(cellSizePixel / 1.5F);
+        programAssignmentCellTextPaint.setTextSize(cellSizePixel / 1.5F);
     }
 
     private void drawLines(Canvas canvas) {
@@ -200,11 +205,11 @@ public class SudoKuBoardView extends View {
             Paint paint = null;
             if (cell.isGenerateByProgram()) {
                 paint = programAssignmentCellTextPaint;
-            }else if(cell.getConflictCount()>0){
+            } else if (cell.getConflictCount() > 0) {
                 paint = conflictCellTextPaint;
-            }else if(row == rowSelected && col == colSelected) {
+            } else if (row == rowSelected && col == colSelected) {
                 paint = selectedCellTextPaint;
-            }else {
+            } else {
                 paint = userAssignmentCellTextPaint;
             }
             byte cellNumber = cell.getNumber();
@@ -232,14 +237,25 @@ public class SudoKuBoardView extends View {
         int col = (int) (x / cellSizePixel);
         int row = (int) (y / cellSizePixel);
         Log.i(TAG, "handleActionDown: (" + row + ", " + col + ")");
-        rowSelected = row;
-        colSelected = col;
+//        rowSelected = row;
+//        colSelected = col;
         mListener.handle(row, col);
         invalidate();
     }
 
     public void bindCellsManager(CellsManager manager) {
         mCellsManager = manager;
+    }
+
+    public void updateBoardFocus(Integer row, Integer col) {
+        rowSelected = row;
+        colSelected = col;
+        invalidate();
+    }
+
+    public void updateBoardUI(List<Cell> cells) {
+        mCellsManager.bind(cells);
+        invalidate();
     }
 
     public interface onTouchListener {

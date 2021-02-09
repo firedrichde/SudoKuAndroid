@@ -1,5 +1,9 @@
 package android.friedrich.sudoKu;
 
+import android.friedrich.sudoKu.utils.AssignmentTracker;
+import android.friedrich.sudoKu.utils.SudoKuBoard;
+import android.friedrich.sudoKu.utils.SudoKuConstant;
+
 import org.junit.Before;
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.utils;
 
 import android.util.Log;
 

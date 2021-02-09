@@ -1,4 +1,4 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.utils;
 
 import java.util.ArrayList;
 import java.util.List;

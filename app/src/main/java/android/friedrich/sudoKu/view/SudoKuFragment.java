@@ -1,9 +1,16 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.view;
 
 import android.content.Context;
-import android.friedrich.sudoKu.data.PuzzleDao;
+import android.friedrich.sudoKu.utils.AssignmentPreference;
+import android.friedrich.sudoKu.data.Cell;
+import android.friedrich.sudoKu.utils.CellsManager;
+import android.friedrich.sudoKu.R;
+import android.friedrich.sudoKu.utils.SudoKuBoard;
+import android.friedrich.sudoKu.view.custom.SudoKuBoardView;
+import android.friedrich.sudoKu.utils.SudoKuConstant;
+import android.friedrich.sudoKu.utils.SudoKuSaver;
+import android.friedrich.sudoKu.utils.SudoKuSaverManager;
 import android.friedrich.sudoKu.data.Puzzle;
-import android.friedrich.sudoKu.data.PuzzleRepository;
 import android.friedrich.sudoKu.viewmodels.PuzzleViewModel;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +42,7 @@ public class SudoKuFragment extends Fragment {
     /**
      * assignment is not on focus
      */
+    @Deprecated
     private static final byte ASSIGNMENT_UN_FOCUS = 10;
 
     /**
@@ -77,7 +86,9 @@ public class SudoKuFragment extends Fragment {
     /**
      * current number for assignment
      */
+    @Deprecated
     private byte mActiveNumber;
+    @Deprecated
     private Cell[] mCells;
 
     private CellsManager mCellsManager;
@@ -149,35 +160,28 @@ public class SudoKuFragment extends Fragment {
         mPuzzleViewModel = new ViewModelProvider(this,
                 ViewModelProvider.AndroidViewModelFactory.getInstance(getActivity().getApplication()))
                 .get(PuzzleViewModel.class);
-        mPuzzleViewModel.getLastPuzzle().observe(this, puzzle -> {
-            if (puzzle==null) {
-                /*
-                table puzzles data is empty
-                 */
-                mPuzzle = new Puzzle();
-                mSudoKuGenerateTask = new SudoKuGenerateTask();
-                mSudoKuGenerateTask.execute();
-//                return;
-            }else {
-                if (mPuzzle == null) {
-                    mPuzzle = new Puzzle();
-                }
-                mPuzzle.setPuzzleString(puzzle.getPuzzleString());
-                mPuzzle.setId(puzzle.getId());
-                mPuzzle.setFilename(puzzle.getFilename());
-                mPuzzle.setSolved(puzzle.isSolved());
-            }
-//            mCellsManager.parsePuzzleString(puzzle.getPuzzleString());
-            bindPuzzle(mPuzzle.getPuzzleString());
-        });
-//        if (mBoardString == null || mBoardString.equals("")) {
-//            /*
-//            generate new puzzle
-//             */
-//        } else {
-//            bindPuzzle(mBoardString);
-//        }
+        mPuzzleViewModel.mSudoKuGame.mSelectedCellLiveData.observe(this,
+                selectedPair -> {
+                    updateBoardFocus(selectedPair);
+                });
+        mPuzzleViewModel.mSudoKuGame.mCellsLiveData.observe(this,
+                cells -> {
+                    if (cells == null || cells.size() == 0) {
+                        SudoKuGenerateTask generateTask = new SudoKuGenerateTask();
+                        generateTask.execute();
+                    } else {
+                        updateBoardUI(cells);
+                    }
+                });
         mCanUndo = false;
+    }
+
+    private void updateBoardUI(List<Cell> cells) {
+        mBoardView.updateBoardUI(cells);
+    }
+
+    private void updateBoardFocus(Pair<Integer, Integer> selectedPair) {
+        mBoardView.updateBoardFocus(selectedPair.first, selectedPair.second);
     }
 
     @Override
@@ -192,14 +196,15 @@ public class SudoKuFragment extends Fragment {
                  /*
                  modify cell value if the value is assigned by user
                   */
-                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber != ASSIGNMENT_UN_FOCUS) {
-                    mCellsManager.assignValue(row, col, mActiveNumber);
-                    Log.i(TAG, "handle: assign cell (" + row + ", " + col + ")"
-                            + ", number=" + mActiveNumber);
-                    mCanUndo = true;
-                    boolean solved = mCellsManager.isCompleteSolve();
-                    mPuzzle.setSolved(solved);
-                }
+//                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber != ASSIGNMENT_UN_FOCUS) {
+//                    mCellsManager.assignValue(row, col, mActiveNumber);
+//                    Log.i(TAG, "handle: assign cell (" + row + ", " + col + ")"
+//                            + ", number=" + mActiveNumber);
+//                    mCanUndo = true;
+//                    boolean solved = mCellsManager.isCompleteSolve();
+//                    mPuzzle.setSolved(solved);
+//                }
+                mPuzzleViewModel.mSudoKuGame.updateBoardFocus(row,col);
             }
         });
         mBoardView.bindCellsManager(mCellsManager);
@@ -226,17 +231,23 @@ public class SudoKuFragment extends Fragment {
         mButtonNumberList.add(mButton7);
         mButtonNumberList.add(mButton8);
         mButtonNumberList.add(mButton9);
-        for (Button button :
-                mButtonNumberList) {
-            button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // set the value for assignment
-                    mActiveNumber = Byte.parseByte(button.getText().toString());
-                    Log.i(TAG, "onClick: active number " + mActiveNumber);
-                }
+        mButtonNumberList.stream().forEach(button -> {
+            String number = button.getText().toString();
+            button.setOnClickListener((buttonView) -> {
+                mPuzzleViewModel.mSudoKuGame.handleAssign(Integer.parseInt(number));
             });
-        }
+        });
+//        for (Button button :
+//                mButtonNumberList) {
+//            button.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    // set the value for assignment
+//                    mActiveNumber = Byte.parseByte(button.getText().toString());
+//                    Log.i(TAG, "onClick: active number " + mActiveNumber);
+//                }
+//            });
+//        }
         mButtonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -268,7 +279,7 @@ public class SudoKuFragment extends Fragment {
         @Override
         protected SudoKuSaver doInBackground(Void... voids) {
             SudoKuSaver sudoKuSaver = null;
-            String boardString = "";
+//            String boardString = "";
             try {
                 sudoKuSaver = SudoKuBoard.GeneratePuzzle();
             } catch (Exception e) {
@@ -284,18 +295,22 @@ public class SudoKuFragment extends Fragment {
              bind the grid initial values to cells
              */
 //            SudoKuSaverManager saverManager = SudoKuSaverManager.getManager(getActivity());
-            mPuzzle = new Puzzle();
-            mPuzzle.mFilename = UUID.randomUUID().toString();
-            mPuzzle.mSolved = false;
-            mPuzzle.mPuzzleString = sudoKuSaver.getPuzzleString();
+//            mPuzzle = new Puzzle();
+//            mPuzzle.mFilename = UUID.randomUUID().toString();
+//            mPuzzle.mSolved = false;
+//            mPuzzle.mPuzzleString = sudoKuSaver.getPuzzleString();
 //            bindPuzzle(sudoKuSaver);
 //            bindPuzzle(mPuzzle.getPuzzleString());
+            bindPuzzle(sudoKuSaver.getPuzzleString());
         }
     }
 
     private void bindPuzzle(String mBoardString) {
-        mCellsManager.parsePuzzleString(mBoardString);
-        mBoardView.invalidate();
+        List<Cell> cells = CellsManager.parseCellsFromPuzzleString(mBoardString);
+        cells.stream().forEach(cell -> cell.setGenerateByProgram(true));
+        mPuzzleViewModel.mSudoKuGame.savePuzzleString(mBoardString);
+        mPuzzleViewModel.mSudoKuGame.saveCells(cells);
+        mBoardView.updateBoardUI(cells);
     }
 
     private void bindPuzzle(SudoKuSaver sudoKuSaver) {
@@ -313,7 +328,7 @@ public class SudoKuFragment extends Fragment {
         puzzle.setFilename(UUID.randomUUID().toString());
         puzzle.setSolved(false);
         puzzle.setPuzzleString(mBoardString);
-        mPuzzleViewModel.insert(puzzle);
+//        mPuzzleViewModel.insert(puzzle);
         mBoardView.invalidate();
     }
 
@@ -452,35 +467,16 @@ public class SudoKuFragment extends Fragment {
     public void onPause() {
         super.onPause();
         Log.i(TAG, "onPause: dump puzzle");
-        mPuzzle.setPuzzleString(mCellsManager.generatePuzzleString());
-        mPuzzleViewModel.update(mPuzzle);
-//        dumpPuzzleString();
-
     }
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-//        mPuzzleDao = SudoKuDatabaseHelper.getDatabase(getActivity()).puzzleDao();
-//        mPuzzle = mPuzzleDao.getLatest();
-//        if (mPuzzle != null) {
-//            // retrieve puzzle from database
-//            mBoardString = mPuzzle.mPuzzleString;
-//            mSaverManager = SudoKuSaverManager.getManager(getActivity().getApplicationContext());
-//            mSaverManager.load(mPuzzle);
-//        }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-//        boolean exist = mPuzzleDao.getPuzzle(mPuzzle.mId) == 1;
-//        mSaverManager.dump(mPuzzle);
-//        if (exist) {
-//            mPuzzleDao.update(mPuzzle);
-//        } else {
-//            mPuzzleDao.insert(mPuzzle);
-//        }
     }
 
     @Override

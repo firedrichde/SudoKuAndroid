@@ -1,5 +1,6 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.view;
 
+import android.friedrich.sudoKu.R;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;

@@ -1,5 +1,9 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.utils;
 
+import android.friedrich.sudoKu.data.Cell;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class CellsManager {
@@ -176,6 +180,18 @@ public class CellsManager {
         return puzzleBuilder.toString();
     }
 
+    public static List<Cell> parseCellsFromPuzzleString(String puzzle) {
+       List<Cell> cells = new ArrayList<>();
+        for (int i = 0; i < puzzle.length(); i++) {
+            if (puzzle.charAt(i) != SudoKuBoard.dot) {
+                Cell cell = new Cell(i);
+                cell.setNumber(Byte.parseByte(String.valueOf(puzzle.charAt(i))));
+                cells.add(cell);
+            }
+        }
+        return cells;
+    }
+
     public void parsePuzzleString(String puzzle) {
         for (int i = 0; i < puzzle.length(); i++) {
             if (puzzle.charAt(i) != SudoKuBoard.dot) {
@@ -188,6 +204,13 @@ public class CellsManager {
 
     public boolean isCompleteSolve() {
         return SudoKuBoard.check(generatePuzzleString());
+    }
+
+    public void bind(List<Cell> cells) {
+        cells.stream().forEach(cell -> {
+            int index = cell.getIndex();
+            mCells[index] = cell;
+        });
     }
 
     /**

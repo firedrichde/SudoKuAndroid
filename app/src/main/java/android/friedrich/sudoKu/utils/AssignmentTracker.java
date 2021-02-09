@@ -1,4 +1,6 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.utils;
+
+import android.friedrich.sudoKu.utils.SudoKuConstant;
 
 import androidx.annotation.NonNull;
 

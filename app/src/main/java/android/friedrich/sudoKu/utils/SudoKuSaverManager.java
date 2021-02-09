@@ -1,4 +1,4 @@
-package android.friedrich.sudoKu;
+package android.friedrich.sudoKu.utils;
 
 import android.content.Context;
 import android.friedrich.sudoKu.data.Puzzle;
