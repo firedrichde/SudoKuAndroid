@@ -234,7 +234,14 @@ public class SudoKuFragment extends Fragment {
         mButtonNumberList.stream().forEach(button -> {
             String number = button.getText().toString();
             button.setOnClickListener((buttonView) -> {
-                mPuzzleViewModel.mSudoKuGame.handleAssign(Integer.parseInt(number));
+                Runnable runnable = new Runnable(){
+                    @Override
+                    public void run() {
+                        mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
+                    }
+                };
+                Thread thread = new Thread(runnable);
+                thread.start();
             });
         });
 //        for (Button button :

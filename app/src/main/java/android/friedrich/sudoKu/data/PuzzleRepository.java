@@ -53,4 +53,8 @@ public class PuzzleRepository {
             mCellDao.insert(cell);
         });
     }
+
+    public List<Cell> getCellsList(){
+        return mCellDao.getCellsList();
+    }
 }

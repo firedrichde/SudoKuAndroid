@@ -26,4 +26,7 @@ public interface CellDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(Cell cell);
+
+    @Query("SELECt * FROM sudo_ku_cells")
+    List<Cell> getCellsList();
 }
