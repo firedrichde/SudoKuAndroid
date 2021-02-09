@@ -3,6 +3,7 @@ package android.friedrich.sudoKu;
 import android.util.Log;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class SudoKuBoard {
     private static String TAG = "SudoKuBoard";
@@ -185,6 +186,39 @@ public class SudoKuBoard {
         }
         return true;
     }
+
+    /**
+     * judge whether the puzzle is solved
+     * @param puzzleString the specified puzzle
+     * @return true if the puzzle is solved, otherwise return false
+     */
+    public static boolean check(String puzzleString) {
+        List<String> assignmentList = new ArrayList<String>(
+                Arrays.asList(puzzleString.split("")));
+        /*
+        every cell has been assigned with a number
+         */
+        long assignmentCount = assignmentList.stream()
+                .filter(s -> !s.equals(String.valueOf(dot)))
+                .count();
+        if (assignmentCount != SudoKuConstant.BOARD_CELL_SIZE) {
+            return false;
+        }else {
+            /*
+            count the conflict
+             */
+            long conflictCount = IntStream.range(0,SudoKuConstant.BOARD_CELL_SIZE)
+                    .filter(i-> {
+                       Set<Integer> peersIndex = SudoKuBoard.getGridPeers(i);
+                       long tmpCount = peersIndex.stream()
+                               .filter(j-> assignmentList.get(i).equals(assignmentList.get(j)))
+                               .count();
+                       return tmpCount > 0;
+                    }).count();
+            return conflictCount == 0;
+        }
+    }
+
 
     public static SudoKuSaver GeneratePuzzle() throws Exception {
         if (generator == null) {

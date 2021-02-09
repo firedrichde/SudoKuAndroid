@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "android.friedrich.sudoKu"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -29,6 +29,23 @@ android {
 }
 
 dependencies {
+    implementation "androidx.room:room-runtime:$rootProject.roomVersion"
+    annotationProcessor "androidx.room:room-compiler:$rootProject.roomVersion"
+
+    // optional - RxJava support for Room
+    implementation "androidx.room:room-rxjava2:$rootProject.roomVersion"
+
+    // optional - Guava support for Room, including Optional and ListenableFuture
+    implementation "androidx.room:room-guava:$rootProject.roomVersion"
+
+    // optional - Test helpers
+    testImplementation "androidx.room:room-testing:$rootProject.roomVersion"
+
+    // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
+    implementation 'org.xerial:sqlite-jdbc:3.32.3.3'
+
+    // Lifecycle components
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$rootProject.lifecycleVersion"
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'

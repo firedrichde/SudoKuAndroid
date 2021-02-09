@@ -160,13 +160,45 @@ public class CellsManager {
     }
 
     /**
+     * generate a string that represent current status of SudoKu
+     *
+     * @return a string represent sudoKu puzzle
+     */
+    public String generatePuzzleString() {
+        StringBuilder puzzleBuilder = new StringBuilder();
+        for (int i = 0; i < mCells.length; i++) {
+            if (mCells[i].isAssigned()) {
+                puzzleBuilder.append(mCells[i].getNumber());
+            } else {
+                puzzleBuilder.append(SudoKuBoard.dot);
+            }
+        }
+        return puzzleBuilder.toString();
+    }
+
+    public void parsePuzzleString(String puzzle) {
+        for (int i = 0; i < puzzle.length(); i++) {
+            if (puzzle.charAt(i) != SudoKuBoard.dot) {
+                mCells[i].setNumber(Byte.parseByte(puzzle.substring(i, i + 1)));
+            } else {
+                mCells[i].setNumber(SudoKuConstant.NUMBER_UNCERTAIN);
+            }
+        }
+    }
+
+    public boolean isCompleteSolve() {
+        return SudoKuBoard.check(generatePuzzleString());
+    }
+
+    /**
      * interface definition for a callback to be invoked when a cell assignment occurs
      */
     public interface AssignmentListener {
         /**
          * call when a cell assignment occurs
-         * @param row cell row
-         * @param col cell column
+         *
+         * @param row    cell row
+         * @param col    cell column
          * @param number cell number
          */
         void onAssign(int row, int col, byte number);

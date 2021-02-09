@@ -43,6 +43,8 @@ public class SudoKuSaver {
         mUUID = UUID.randomUUID();
         mStorageFileName = PREFIX_FILE + mUUID.toString();
         mAssignmentOffset = 0;
+        mAssignmentList= new ArrayList<>();
+        mTracker = new AssignmentTracker();
     }
 
     public SudoKuSaver(SudoKuSaver other) {
@@ -84,6 +86,10 @@ public class SudoKuSaver {
         }
         mAssignmentList.add(new Assignment(row, col, number));
         mTracker.addRecord(row,col,number);
+    }
+
+    public int getAssignmentSize() {
+        return mAssignmentList.size();
     }
 
 
@@ -196,5 +202,13 @@ public class SudoKuSaver {
         } else {
             return mAssignmentList.get(mAssignmentList.size()-2);
         }
+    }
+
+
+    /**
+     * dump assignments and tracker to internal storage
+     */
+    public void dump() {
+
     }
 }

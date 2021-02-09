@@ -15,6 +15,8 @@ public class AssignmentPreference {
      */
     public static final String PRE_PUZZLE_STRING = "android.friedrich.sudoKu.puzzleString";
 
+//    public static final String PRE_SUDO_KU_ID = "android.friedrich.sudoKu.sudoKuId";
+
     public static void setPreferenceAssignmentStep(Context context, int step) {
         SharedPreferences sharedPreferences = context.
                 getSharedPreferences(PRE_ASSIGNMENT_STEP, Context.MODE_PRIVATE);
@@ -24,7 +26,7 @@ public class AssignmentPreference {
     public static int getPreferenceAssignmentStep(Context context) {
         SharedPreferences sharedPreferences = context.
                 getSharedPreferences(PRE_ASSIGNMENT_STEP, Context.MODE_PRIVATE);
-        return sharedPreferences.getInt(PRE_ASSIGNMENT_STEP, -1);
+        return sharedPreferences.getInt(PRE_ASSIGNMENT_STEP, -2);
     }
 
     public static void setPrePuzzleString(Context context, String puzzle) {
@@ -36,6 +38,6 @@ public class AssignmentPreference {
     public static String getPrePuzzleString(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(PRE_PUZZLE_STRING,
                 Context.MODE_PRIVATE);
-        return sharedPreferences.getString(PRE_PUZZLE_STRING,null);
+        return sharedPreferences.getString(PRE_PUZZLE_STRING, null);
     }
 }

@@ -1,7 +1,5 @@
 package android.friedrich.sudoKu;
 
-import android.os.SystemClock;
-
 import org.junit.Before;
 import org.junit.Test;
 
