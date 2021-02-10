@@ -234,34 +234,21 @@ public class SudoKuFragment extends Fragment {
         mButtonNumberList.stream().forEach(button -> {
             String number = button.getText().toString();
             button.setOnClickListener((buttonView) -> {
-                Runnable runnable = new Runnable(){
-                    @Override
-                    public void run() {
-                        mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
-                    }
-                };
-                Thread thread = new Thread(runnable);
-                thread.start();
+                mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
+//                Runnable runnable = new Runnable(){
+//                    @Override
+//                    public void run() {
+//                        mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
+//                    }
+//                };
+//                Thread thread = new Thread(runnable);
+//                thread.start();
             });
         });
-//        for (Button button :
-//                mButtonNumberList) {
-//            button.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    // set the value for assignment
-//                    mActiveNumber = Byte.parseByte(button.getText().toString());
-//                    Log.i(TAG, "onClick: active number " + mActiveNumber);
-//                }
-//            });
-//        }
         mButtonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                /*
-                 set the value to Cell.UNFILLED_VALUE in order to remove previous assignment
-                 */
-                mActiveNumber = SudoKuConstant.NUMBER_UNCERTAIN;
+                mPuzzleViewModel.mSudoKuGame.handleDelete();
                 Log.i(TAG, "onClick: reset active number");
             }
         });

@@ -198,6 +198,9 @@ public class SudoKuBoardView extends View {
             return;
         }
         Cell cell = mCellsManager.getCell(row, col);
+        if (cell ==null) {
+            return;
+        }
         if (cell.isAssigned()) {
             /*
            draw cell number

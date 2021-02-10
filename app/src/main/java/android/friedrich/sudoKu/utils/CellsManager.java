@@ -207,6 +207,7 @@ public class CellsManager {
     }
 
     public void bind(List<Cell> cells) {
+        mCells = new Cell[SudoKuConstant.BOARD_CELL_SIZE];
         cells.stream().forEach(cell -> {
             int index = cell.getIndex();
             mCells[index] = cell;

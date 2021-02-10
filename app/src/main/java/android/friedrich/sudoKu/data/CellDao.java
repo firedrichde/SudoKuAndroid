@@ -7,6 +7,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -29,4 +30,7 @@ public interface CellDao {
 
     @Query("SELECt * FROM sudo_ku_cells")
     List<Cell> getCellsList();
+
+    @Update
+    void updateCells(List<Cell> cells);
 }

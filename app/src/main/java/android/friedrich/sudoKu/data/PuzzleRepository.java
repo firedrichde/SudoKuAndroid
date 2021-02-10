@@ -57,4 +57,12 @@ public class PuzzleRepository {
     public List<Cell> getCellsList(){
         return mCellDao.getCellsList();
     }
+
+    public void deleteCell(Cell targetCell) {
+        mCellDao.delete(targetCell);
+    }
+
+    public void updateCells(List<Cell> cells) {
+        mCellDao.updateCells(cells);
+    }
 }

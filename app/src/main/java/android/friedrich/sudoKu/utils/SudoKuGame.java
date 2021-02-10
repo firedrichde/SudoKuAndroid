@@ -9,12 +9,14 @@ import android.util.Pair;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class SudoKuGame {
     private static ExecutorService sExecutorService = Executors.newFixedThreadPool(4);
@@ -53,7 +55,7 @@ public class SudoKuGame {
     }
 
     public void handleAssignment(byte number) {
-        int index = mSelectedRow * SudoKuConstant.BOARD_ROW_SIZE + mSelectedCol;
+        final int index = mSelectedRow * SudoKuConstant.BOARD_ROW_SIZE + mSelectedCol;
         if (index < 0 || index >= SudoKuConstant.BOARD_CELL_SIZE) {
             return;
         }
@@ -65,38 +67,107 @@ public class SudoKuGame {
                 Optional<Cell> object = cells.stream()
                         .filter(cell -> cell.getIndex() == index)
                         .findFirst();
-
+                Set<Integer> indexOfPeers = SudoKuBoard.getGridPeers(index);
                 Cell targetCell;
                 if (!object.isPresent()) {
                     targetCell = new Cell(index);
                 } else {
                     targetCell = object.get();
                     targetCell.setConflictCount(0);
+                    byte previousNumber = targetCell.getNumber();
+                    /*
+                    repeated assignment
+                     */
+                    if (previousNumber == number) {
+                        return;
+                    }
+                    List<Cell> conflictCells = getConflictCells(cells, indexOfPeers, previousNumber);
+                    /*
+                    decrease conflict count
+                     */
+                    if (conflictCells.size() > 0) {
+                        removeConflict(conflictCells);
+                        mPuzzleRepository.updateCells(conflictCells);
+                    }
+
                 }
                 targetCell.setNumber(number);
-                Set<Integer> peerIndex = SudoKuBoard.getGridPeers(index);
-                cells.stream()
-                        .filter(cell ->
-                                peerIndex.contains(cell.getIndex()) && cell.getNumber() == number)
-                        .forEach(cell -> {
-                            cell.increaseConflictCount();
-                            targetCell.increaseConflictCount();
-                        });
-                cells.add(targetCell);
-                mPuzzleRepository.insertAllCells(cells);
+                List<Cell> conflictCells = getConflictCells(cells, indexOfPeers, number);
+                if (conflictCells.size() > 0) {
+                    addConflict(conflictCells, targetCell);
+                    mPuzzleRepository.updateCells(conflictCells);
+                }
+                mPuzzleRepository.insertCell(targetCell);
             }
-//            }
         });
-//
-//        Cell cell = new Cell(index);
-//        cell.setNumber((byte)number);
-//        mPuzzleRepository.insertCell(cell);
+    }
+
+    public void handleDelete() {
+        final int index = mSelectedRow * SudoKuConstant.BOARD_ROW_SIZE + mSelectedCol;
+        if (index < 0 || index >= SudoKuConstant.BOARD_CELL_SIZE) {
+            return;
+        }
+        sExecutorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                List<Cell> cells = mPuzzleRepository.getCellsList();
+                Optional<Cell> object = cells.stream()
+                        .filter(cell -> cell.getIndex() == index)
+                        .findFirst();
+                Set<Integer> indexOfPeers = SudoKuBoard.getGridPeers(index);
+                Cell targetCell;
+                if (!object.isPresent()) {
+                    return;
+                } else {
+                    targetCell = object.get();
+                    if (targetCell.isGenerateByProgram()){
+                        return;
+                    }
+//                    targetCell.setConflictCount(0);
+                    byte previousNumber = targetCell.getNumber();
+                    /*
+                    decrease conflict count
+                     */
+                    List<Cell> conflictCells = getConflictCells(cells, indexOfPeers, previousNumber);
+//                    cells.remove(targetCell);
+                    mPuzzleRepository.deleteCell(targetCell);
+                    if (conflictCells.size() > 0) {
+                        removeConflict(conflictCells);
+                        mPuzzleRepository.updateCells(conflictCells);
+                    }
+                }
+            }
+        });
     }
 
     public void updateBoardFocus(int row, int col) {
         mSelectedRow = row;
         mSelectedCol = col;
         mSelectedCellLiveData.postValue(new Pair<>(mSelectedRow, mSelectedCol));
+    }
+
+    private List<Cell> getConflictCells(List<Cell> cells, Set<Integer> indexOfPeers, byte number) {
+        List<Cell> conflictCells;
+        conflictCells = cells.stream()
+                .filter(cell -> indexOfPeers.contains(cell.getIndex()))
+                .filter(cell -> cell.getNumber() == number)
+                .collect(Collectors.toList());
+        return conflictCells;
+    }
+
+    private void removeConflict(List<Cell> cells) {
+        cells.stream()
+                .forEach(cell -> cell.decreaseConflictCount());
+    }
+
+    private void addConflict
+            (List<Cell> cells, Cell targetCell
+            ) {
+        cells.stream()
+                .forEach(cell -> {
+                    cell.increaseConflictCount();
+                    targetCell.increaseConflictCount();
+                });
     }
 
 //    public void updateCellSManager()
