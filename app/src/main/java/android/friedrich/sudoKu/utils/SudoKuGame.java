@@ -102,7 +102,7 @@ public class SudoKuGame {
         });
     }
 
-    public void handleDelete() {
+    public void handleRemoveNumber() {
         final int index = mSelectedRow * SudoKuConstant.BOARD_ROW_SIZE + mSelectedCol;
         if (index < 0 || index >= SudoKuConstant.BOARD_CELL_SIZE) {
             return;

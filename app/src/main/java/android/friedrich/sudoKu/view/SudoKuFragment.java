@@ -25,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +63,7 @@ public class SudoKuFragment extends Fragment {
     private Button mButton7;
     private Button mButton8;
     private Button mButton9;
-    private Button mButtonDelete;
+    private ImageButton mButtonRemoveNumber;
 
     /**
      * button is designed for undo assignment operation
@@ -217,7 +218,7 @@ public class SudoKuFragment extends Fragment {
         mButton7 = view.findViewById(R.id.button_number_7);
         mButton8 = view.findViewById(R.id.button_number_8);
         mButton9 = view.findViewById(R.id.button_number_9);
-        mButtonDelete = view.findViewById(R.id.button_delete_number);
+        mButtonRemoveNumber = view.findViewById(R.id.button_remove_number);
         mButtonShowNextStep = view.findViewById(R.id.button_show_program_next);
         mButtonShowPreviousStep = view.findViewById(R.id.button_show_program_previous);
         mButtonUndo = view.findViewById(R.id.button_undo);
@@ -245,10 +246,10 @@ public class SudoKuFragment extends Fragment {
 //                thread.start();
             });
         });
-        mButtonDelete.setOnClickListener(new View.OnClickListener() {
+        mButtonRemoveNumber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPuzzleViewModel.mSudoKuGame.handleDelete();
+                mPuzzleViewModel.mSudoKuGame.handleRemoveNumber();
                 Log.i(TAG, "onClick: reset active number");
             }
         });

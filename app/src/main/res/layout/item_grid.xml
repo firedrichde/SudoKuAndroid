@@ -91,13 +91,13 @@
             android:layout_row="3"
             android:layout_column="0"
             android:text="@string/add_note" />
-        <Button
-            android:id="@+id/button_delete_number"
+        <ImageButton
+            android:id="@+id/button_remove_number"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_row="3"
             android:layout_column="1"
-            android:text="@string/delete_assignment" />
+            android:src="@drawable/ic_remove" />
         <Button
             android:id="@+id/button_show_program_next"
             android:layout_width="wrap_content"

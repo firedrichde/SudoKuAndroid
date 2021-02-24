@@ -6,8 +6,8 @@ import android.friedrich.sudoKu.utils.SudoKuConstant;
 import android.friedrich.sudoKu.data.Cell;
 import android.friedrich.sudoKu.utils.CellsManager;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -18,7 +18,6 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import java.util.List;
-import java.util.Stack;
 
 public class SudoKuBoardView extends View {
     private static final String TAG = "SudoKuBoardView";
@@ -77,55 +76,46 @@ public class SudoKuBoardView extends View {
 
     private CellsManager mCellsManager;
 
-    private Stack<Integer> mAssignTracker;
+//    private Stack<Integer> mAssignTracker;
 
     public SudoKuBoardView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         int color;
-        thickLinePaint = new Paint();
-        thickLinePaint.setStyle(Paint.Style.STROKE);
-        thickLinePaint.setColor(Color.BLACK);
-        thickLinePaint.setStrokeWidth(4F);
+        setPaints(context);
+    }
 
-        thinLinePaint = new Paint();
-        thinLinePaint.setStyle(Paint.Style.STROKE);
-        thinLinePaint.setColor(Color.BLACK);
-        thinLinePaint.setStrokeWidth(2F);
+    /**
+     * set paints for cells and lines of grid
+     * @param context context
+     */
+    private void setPaints(Context context) {
+        final Style defaultStyle = Style.FILL_AND_STROKE;
+        final Style lineStyle = Style.STROKE;
+        thinLinePaint = getPaint(context, lineStyle, R.color.black, 2F);
+        thickLinePaint = getPaint(context, lineStyle, R.color.black, 4F);
+        selectedCellPaint = getPaint(context, defaultStyle, R.color.light_yellow);
+        selectedCellTextPaint = getPaint(context,defaultStyle,R.color.green);
+        relativeCellPaint = getPaint(context, defaultStyle,R.color.light_white);
+        commonCellTextPaint = getPaint(context, defaultStyle,R.color.black);
+        conflictCellTextPaint = getPaint(context, defaultStyle,R.color.red);
+        lastCellAssignedTextPaint = getPaint(context,defaultStyle,R.color.light_green);
+        programAssignmentCellTextPaint = getPaint(context,defaultStyle,R.color.black);
+        userAssignmentCellTextPaint = getPaint(context, defaultStyle, R.color.light_blue);
+    }
 
-        selectedCellPaint = new Paint();
-        selectedCellPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        color = ContextCompat.getColor(context, R.color.light_yellow);
-        selectedCellPaint.setColor(color);
+    private Paint getPaint(Context context, Style style, int colorId, float width) {
+        Paint paint = new Paint();
+        paint.setStyle(style);
+        int color = ContextCompat.getColor(context, colorId);
+        paint.setColor(color);
+        if (width != -1F) {
+            paint.setStrokeWidth(width);
+        }
+        return paint;
+    }
 
-        relativeCellPaint = new Paint();
-        relativeCellPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        color = ContextCompat.getColor(context, R.color.light_white);
-        relativeCellPaint.setColor(color);
-
-        selectedCellTextPaint = new Paint();
-        selectedCellTextPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        color = ContextCompat.getColor(context, R.color.green);
-        selectedCellTextPaint.setColor(color);
-
-        commonCellTextPaint = new Paint();
-        commonCellTextPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        color = ContextCompat.getColor(context, R.color.black);
-        commonCellTextPaint.setColor(color);
-
-        conflictCellTextPaint = new Paint();
-        conflictCellTextPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        color = ContextCompat.getColor(context, R.color.red);
-        conflictCellTextPaint.setColor(color);
-
-        lastCellAssignedTextPaint = new Paint(commonCellTextPaint);
-        color = ContextCompat.getColor(context, R.color.light_green);
-        lastCellAssignedTextPaint.setColor(color);
-
-        userAssignmentCellTextPaint = new Paint(commonCellTextPaint);
-        color = ContextCompat.getColor(context, R.color.light_blue);
-        userAssignmentCellTextPaint.setColor(color);
-
-        programAssignmentCellTextPaint = new Paint(commonCellTextPaint);
+    private Paint getPaint(Context context, Style style, int colorId) {
+        return getPaint(context, style, colorId, -1F);
     }
 
     @Override
@@ -198,7 +188,7 @@ public class SudoKuBoardView extends View {
             return;
         }
         Cell cell = mCellsManager.getCell(row, col);
-        if (cell ==null) {
+        if (cell == null) {
             return;
         }
         if (cell.isAssigned()) {
