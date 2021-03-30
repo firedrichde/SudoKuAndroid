@@ -1,6 +1,7 @@
 package android.friedrich.sudoKu.view;
 
 import android.content.Context;
+import android.friedrich.sudoKu.databinding.ItemGridBinding;
 import android.friedrich.sudoKu.utils.AssignmentPreference;
 import android.friedrich.sudoKu.data.Cell;
 import android.friedrich.sudoKu.utils.CellsManager;
@@ -28,6 +29,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,6 +42,7 @@ public class SudoKuFragment extends Fragment {
     private static final String TAG = "SudoKuFragment";
 //    private static final String KEY_BOARD_STRING = "boardString";
 
+    private ItemGridBinding mItemGridBinding;
     /**
      * assignment is not on focus
      */
@@ -51,18 +54,7 @@ public class SudoKuFragment extends Fragment {
      */
     private SudoKuBoardView mBoardView;
 
-    /**
-     * fields from mButton1 to mButton9 is button with number 1 to 9
-     */
-    private Button mButton1;
-    private Button mButton2;
-    private Button mButton3;
-    private Button mButton4;
-    private Button mButton5;
-    private Button mButton6;
-    private Button mButton7;
-    private Button mButton8;
-    private Button mButton9;
+
     private ImageButton mButtonRemoveNumber;
 
     /**
@@ -87,8 +79,6 @@ public class SudoKuFragment extends Fragment {
     /**
      * current number for assignment
      */
-    @Deprecated
-    private byte mActiveNumber;
     @Deprecated
     private Cell[] mCells;
 
@@ -116,6 +106,7 @@ public class SudoKuFragment extends Fragment {
     /**
      * current puzzle on the sudoKu board
      */
+    @Deprecated
     private Puzzle mPuzzle;
 
     public SudoKuFragment() {
@@ -130,8 +121,7 @@ public class SudoKuFragment extends Fragment {
      */
     // TODO: Rename and change types and number of parameters
     public static SudoKuFragment newInstance() {
-        SudoKuFragment fragment = new SudoKuFragment();
-        return fragment;
+        return new SudoKuFragment();
     }
 
     @Override
@@ -141,30 +131,25 @@ public class SudoKuFragment extends Fragment {
 
         mButtonNumberList = new ArrayList<>();
         mSaverManager = SudoKuSaverManager.getManager(getActivity().getApplicationContext());
-        mCells = new Cell[SudoKuBoard.CELL_SIZE];
-        mCellsManager = new CellsManager(mCells);
-        mCellsManager.setCellAssignmentListener(new CellsManager.AssignmentListener() {
-            @Override
-            public void onAssign(int row, int col, byte number) {
-                if (mUserAssignmentSaver == null) {
-                    mUserAssignmentSaver = mSaverManager.getSaverForUser();
-                }
-                if (mUserAssignmentSaver != null) {
-                    mUserAssignmentSaver.addAssignment((byte) row, (byte) col, number);
-                }
+//        mCells = new Cell[SudoKuBoard.CELL_SIZE];
+        mCellsManager = new CellsManager();
+        mCellsManager.setCellAssignmentListener((row, col, number) -> {
+            if (mUserAssignmentSaver == null) {
+                mUserAssignmentSaver = mSaverManager.getSaverForUser();
+            }
+            if (mUserAssignmentSaver != null) {
+                mUserAssignmentSaver.addAssignment((byte) row, (byte) col, number);
             }
         });
-        mActiveNumber = ASSIGNMENT_UN_FOCUS;
-        for (int i = 0; i < mCells.length; i++) {
-            mCells[i] = new Cell(i);
-        }
+//        mActiveNumber = ASSIGNMENT_UN_FOCUS;
+//        for (int i = 0; i < mCells.length; i++) {
+//            mCells[i] = new Cell(i);
+//        }
         mPuzzleViewModel = new ViewModelProvider(this,
                 ViewModelProvider.AndroidViewModelFactory.getInstance(getActivity().getApplication()))
                 .get(PuzzleViewModel.class);
         mPuzzleViewModel.mSudoKuGame.mSelectedCellLiveData.observe(this,
-                selectedPair -> {
-                    updateBoardFocus(selectedPair);
-                });
+                selectedPair -> updateBoardFocus(selectedPair));
         mPuzzleViewModel.mSudoKuGame.mCellsLiveData.observe(this,
                 cells -> {
                     if (cells == null || cells.size() == 0) {
@@ -189,76 +174,43 @@ public class SudoKuFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.item_grid, container, false);
-        mBoardView = view.findViewById(R.id.sudoKu_board_view);
-        mBoardView.setListener(new SudoKuBoardView.onTouchListener() {
-            @Override
-            public void handle(int row, int col) {
-                 /*
-                 modify cell value if the value is assigned by user
-                  */
-//                if (!mCellsManager.isGenerateByProgram(row, col) && mActiveNumber != ASSIGNMENT_UN_FOCUS) {
-//                    mCellsManager.assignValue(row, col, mActiveNumber);
-//                    Log.i(TAG, "handle: assign cell (" + row + ", " + col + ")"
-//                            + ", number=" + mActiveNumber);
-//                    mCanUndo = true;
-//                    boolean solved = mCellsManager.isCompleteSolve();
-//                    mPuzzle.setSolved(solved);
-//                }
-                mPuzzleViewModel.mSudoKuGame.updateBoardFocus(row,col);
-            }
-        });
+        mItemGridBinding = ItemGridBinding.inflate(inflater,container, false);
+        View view = mItemGridBinding.getRoot();
+        mBoardView = mItemGridBinding.sudoKuBoardView;
+        mBoardView.setListener((row, col) -> mPuzzleViewModel.mSudoKuGame.updateBoardFocus(row,col));
         mBoardView.bindCellsManager(mCellsManager);
-        mButton1 = view.findViewById(R.id.button_number_1);
-        mButton2 = view.findViewById(R.id.button_number_2);
-        mButton3 = view.findViewById(R.id.button_number_3);
-        mButton4 = view.findViewById(R.id.button_number_4);
-        mButton5 = view.findViewById(R.id.button_number_5);
-        mButton6 = view.findViewById(R.id.button_number_6);
-        mButton7 = view.findViewById(R.id.button_number_7);
-        mButton8 = view.findViewById(R.id.button_number_8);
-        mButton9 = view.findViewById(R.id.button_number_9);
-        mButtonRemoveNumber = view.findViewById(R.id.button_remove_number);
-        mButtonShowNextStep = view.findViewById(R.id.button_show_program_next);
-        mButtonShowPreviousStep = view.findViewById(R.id.button_show_program_previous);
-        mButtonUndo = view.findViewById(R.id.button_undo);
-        mButtonRedo = view.findViewById(R.id.button_redo);
-        mButtonNumberList.add(mButton1);
-        mButtonNumberList.add(mButton2);
-        mButtonNumberList.add(mButton3);
-        mButtonNumberList.add(mButton4);
-        mButtonNumberList.add(mButton5);
-        mButtonNumberList.add(mButton6);
-        mButtonNumberList.add(mButton7);
-        mButtonNumberList.add(mButton8);
-        mButtonNumberList.add(mButton9);
+
+        Collections.addAll(mButtonNumberList,
+                mItemGridBinding.buttonNumber1,
+                mItemGridBinding.buttonNumber2,
+                mItemGridBinding.buttonNumber3,
+                mItemGridBinding.buttonNumber4,
+                mItemGridBinding.buttonNumber5,
+                mItemGridBinding.buttonNumber6,
+                mItemGridBinding.buttonNumber7,
+                mItemGridBinding.buttonNumber8,
+                mItemGridBinding.buttonNumber9
+                );
+        mButtonUndo = mItemGridBinding.buttonUndo;
+        mButtonRedo = mItemGridBinding.buttonRedo;
+        mButtonRemoveNumber = mItemGridBinding.buttonRemoveNumber;
+        mButtonShowNextStep = mItemGridBinding.buttonShowProgramNext;
+        mButtonShowPreviousStep = mItemGridBinding.buttonShowProgramPrevious;
+
         mButtonNumberList.stream().forEach(button -> {
             String number = button.getText().toString();
-            button.setOnClickListener((buttonView) -> {
-                mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
-//                Runnable runnable = new Runnable(){
-//                    @Override
-//                    public void run() {
-//                        mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number));
-//                    }
-//                };
-//                Thread thread = new Thread(runnable);
-//                thread.start();
-            });
+            button.setOnClickListener((buttonView) -> mPuzzleViewModel.mSudoKuGame.handleAssignment((byte)Integer.parseInt(number)));
         });
-        mButtonRemoveNumber.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mPuzzleViewModel.mSudoKuGame.handleRemoveNumber();
-                Log.i(TAG, "onClick: reset active number");
-            }
+        mButtonRemoveNumber.setOnClickListener(v -> {
+            mPuzzleViewModel.mSudoKuGame.handleRemoveNumber();
+            Log.i(TAG, "onClick: reset active number");
         });
 
         mButtonShowNextStep.setOnClickListener(this::showNextAssignmentByProgram);
-        int assignIndex = AssignmentPreference.getPreferenceAssignmentStep(getActivity());
+        int assignIndex = AssignmentPreference.getPreferenceAssignmentStep(requireActivity());
         if (assignIndex < 0) {
-            /**
-             * not previous assignment
+            /*
+              not previous assignment
              */
             mButtonShowPreviousStep.setEnabled(false);
         } else {
@@ -286,16 +238,6 @@ public class SudoKuFragment extends Fragment {
         @Override
         protected void onPostExecute(SudoKuSaver sudoKuSaver) {
             super.onPostExecute(sudoKuSaver);
-            /*
-             bind the grid initial values to cells
-             */
-//            SudoKuSaverManager saverManager = SudoKuSaverManager.getManager(getActivity());
-//            mPuzzle = new Puzzle();
-//            mPuzzle.mFilename = UUID.randomUUID().toString();
-//            mPuzzle.mSolved = false;
-//            mPuzzle.mPuzzleString = sudoKuSaver.getPuzzleString();
-//            bindPuzzle(sudoKuSaver);
-//            bindPuzzle(mPuzzle.getPuzzleString());
             bindPuzzle(sudoKuSaver.getPuzzleString());
         }
     }
@@ -305,7 +247,7 @@ public class SudoKuFragment extends Fragment {
         cells.stream().forEach(cell -> cell.setGenerateByProgram(true));
         mPuzzleViewModel.mSudoKuGame.savePuzzleString(mBoardString);
         mPuzzleViewModel.mSudoKuGame.saveCells(cells);
-        mBoardView.updateBoardUI(cells);
+//        mBoardView.updateBoardUI(cells);
     }
 
     private void bindPuzzle(SudoKuSaver sudoKuSaver) {
@@ -316,9 +258,9 @@ public class SudoKuFragment extends Fragment {
         mBoardString = sudoKuSaver.getPuzzleString();
         mCellsManager.parsePuzzleString(mBoardString);
         if (mSudoKuSaver == null) {
-            mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).getSaverForProgram();
+            mSudoKuSaver = SudoKuSaverManager.getManager(requireActivity()).getSaverForProgram();
         }
-        AssignmentPreference.setPreferenceAssignmentStep(getActivity(), -1);
+        AssignmentPreference.setPreferenceAssignmentStep(requireActivity(), -1);
         Puzzle puzzle = new Puzzle();
         puzzle.setFilename(UUID.randomUUID().toString());
         puzzle.setSolved(false);
@@ -360,14 +302,14 @@ public class SudoKuFragment extends Fragment {
     public void showPreviousAssignmentByProgram(View view) {
         // TODO: 1/29/21 if click the P_PRE button at the beginning, the app will crash
         if (mSudoKuSaver == null) {
-            mSudoKuSaver = SudoKuSaverManager.getManager(getActivity()).getSaverForProgram();
+            mSudoKuSaver = SudoKuSaverManager.getManager(requireActivity()).getSaverForProgram();
         }
         int stepIndex = showAssignment(true, mSudoKuSaver);
         if (stepIndex == -1) {
             return;
         }
         if (stepIndex >= 0) {
-            AssignmentPreference.setPreferenceAssignmentStep(getActivity(), stepIndex);
+            AssignmentPreference.setPreferenceAssignmentStep(requireActivity(), stepIndex);
         }
     }
 
@@ -397,8 +339,8 @@ public class SudoKuFragment extends Fragment {
     }
 
     private int showAssignment(boolean previous, SudoKuSaver sudoKuSaver) {
-        mActiveNumber = ASSIGNMENT_UN_FOCUS;
-        int stepIndex = AssignmentPreference.getPreferenceAssignmentStep(getActivity());
+//        mActiveNumber = ASSIGNMENT_UN_FOCUS;
+        int stepIndex = AssignmentPreference.getPreferenceAssignmentStep(requireActivity());
         Log.i(TAG, "showAssignment: step=" + stepIndex);
         if (previous) {
             if (mShowPrevious) {
@@ -430,7 +372,6 @@ public class SudoKuFragment extends Fragment {
     public void undoAssignment(View view) {
         SudoKuSaver.Assignment lastAssignment = mUserAssignmentSaver.getLastAssignment();
         if (lastAssignment == null || !mCanUndo) {
-            return;
         } else {
             mCellsManager.assignValue(lastAssignment.getRow(),
                     lastAssignment.getCol(),
@@ -443,7 +384,6 @@ public class SudoKuFragment extends Fragment {
     public void redoAssignment(View view) {
         SudoKuSaver.Assignment secondLastAssignment = mUserAssignmentSaver.getSecondLastAssignment();
         if (secondLastAssignment == null || mCanUndo) {
-            return;
         } else {
             mCellsManager.assignValue(secondLastAssignment.getRow(),
                     secondLastAssignment.getCol(),
@@ -453,29 +393,29 @@ public class SudoKuFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Log.i(TAG, "onPause: dump puzzle");
-    }
-
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//    }
+//
+//    @Override
+//    public void onPause() {
+//        super.onPause();
+//        Log.i(TAG, "onPause: dump puzzle");
+//    }
+//
+//    @Override
+//    public void onAttach(@NonNull Context context) {
+//        super.onAttach(context);
+//    }
+//
+//    @Override
+//    public void onDetach() {
+//        super.onDetach();
+//    }
+//
+//    @Override
+//    public void onDestroy() {
+//        super.onDestroy();
+//    }
 }

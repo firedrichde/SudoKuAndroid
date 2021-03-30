@@ -15,6 +15,10 @@ public class CellsManager {
         mCells = cells;
     }
 
+    public CellsManager() {
+        mCells = null;
+    }
+
     public void setCellAssignmentListener(AssignmentListener mCellAssignmentListener) {
         this.mCellAssignmentListener = mCellAssignmentListener;
     }
@@ -140,6 +144,9 @@ public class CellsManager {
      * @return null if the position is outside the board, else the desired cell
      */
     public Cell getCell(int row, int col) {
+        if (mCells == null) {
+            return null;
+        }
         int index = getIndex(row, col);
         if (index >= SudoKuConstant.BOARD_CELL_SIZE) {
             return null;
